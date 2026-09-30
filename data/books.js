@@ -26,3 +26,15 @@ const ABOUT = {
   en: "Fan translations of the Mononoke light novels by Hideyuki Niki, from Japanese into English and Polish.\n\nThese are unofficial, non-commercial translations made out of love for the series. Please support the official releases.",
   pl: "Fanowskie tłumaczenia light novel z serii Mononoke autorstwa Hideyuki Nikiego, z japońskiego na angielski i polski.\n\nSą to nieoficjalne, niekomercyjne tłumaczenia, powstałe z miłości do serii. Wspieraj oficjalne wydania."
 };
+
+// "Learn Japanese" tab: words taken from the series and its covers. Add more rows freely.
+const LEARN_WORDS = [
+  { jp: "モノノ怪", read: "mononoke", en: "a vengeful spirit", pl: "mściwy duch" },
+  { jp: "薬売り", read: "kusuriuri", en: "medicine seller", pl: "sprzedawca lekarstw" },
+  { jp: "形", read: "katachi", en: "form, shape", pl: "kształt, forma" },
+  { jp: "真", read: "makoto", en: "truth", pl: "prawda" },
+  { jp: "理", read: "kotowari", en: "reason, principle", pl: "rozum, zasada" },
+  { jp: "執", read: "shū", en: "attachment, obsession", pl: "przywiązanie, obsesja" },
+  { jp: "鬼", read: "oni", en: "demon, ogre", pl: "demon, oni" },
+  { jp: "妄", read: "mō", en: "delusion", pl: "złudzenie" }
+];

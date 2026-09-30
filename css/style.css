@@ -34,6 +34,41 @@ main{flex:1;max-width:1240px;width:100%;margin-inline:auto;animation:in .5s ease
 .about{max-width:60ch;padding-bottom:40px}
 .about h1{font-size:34px;font-weight:300;margin-bottom:20px}
 .about p{line-height:1.8;margin-bottom:1em}
+.req{max-width:640px;padding-bottom:40px}
+.req h1{font-size:34px;font-weight:300;letter-spacing:-.02em;margin-bottom:14px}
+.req h2{font-size:18px;font-weight:400;margin:48px 0 8px;padding-top:20px;border-top:1px solid var(--line)}
+.req .lead{line-height:1.7;color:#444;margin-bottom:28px}
+.req form{display:grid;gap:18px}
+.req label{display:grid;gap:6px;font-size:12px;color:var(--dim);letter-spacing:.03em}
+.req .row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.req input,.req textarea,.req select{font:inherit;font-size:15px;color:var(--fg);background:transparent;border:0;border-bottom:1px solid #bbb;padding:8px 0;border-radius:0;resize:vertical;width:100%}
+.req input:focus,.req textarea:focus,.req select:focus{outline:0;border-color:var(--fg)}
+.req button[type=submit]{justify-self:start;font:inherit;font-size:13px;background:var(--fg);color:#fff;border:0;padding:11px 22px;cursor:pointer;transition:opacity .2s}
+.req button[type=submit]:hover{opacity:.8}.req button[type=submit]:disabled{opacity:.5;cursor:default}
+.req .status{font-size:13px;color:var(--dim);margin-left:14px}
+.reqlist{list-style:none;padding:0}
+.reqlist li{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line)}
+.reqlist li.none{color:var(--dim);font-size:14px}
+.reqlist .badge{flex:none;font-size:10px;letter-spacing:.06em;border:1px solid #999;padding:2px 6px;margin-top:2px}
+.reqlist div{flex:1;min-width:0;overflow-wrap:anywhere}
+.reqlist p{font-size:14px;color:#555;margin-top:4px;line-height:1.6;white-space:pre-line}
+.reqlist small{display:block;font-size:12px;color:var(--dim);margin-top:6px}
+.reqlist .del{background:none;border:0;font:inherit;font-size:12px;color:var(--dim);cursor:pointer;text-decoration:underline}
+@media(max-width:480px){.req .row{grid-template-columns:1fr}}
+.learn{max-width:760px;padding-bottom:40px}
+.learn h1{font-size:34px;font-weight:300;letter-spacing:-.02em;margin-bottom:14px}
+.learn h2{font-size:18px;font-weight:400;margin:44px 0 4px;padding-top:20px;border-top:1px solid var(--line)}
+.learn .lead{line-height:1.7;color:#444}
+.learn .note{font-size:13px;color:var(--dim);margin-bottom:16px}
+.kana{display:grid;grid-auto-rows:76px;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.kc{background:#fff;display:flex;flex-direction:column;align-items:center;padding:12px 4px;min-height:0;height:100%}
+.kc.empty{background:#fafaf8}
+.kc b{font-family:var(--mincho);font-weight:500;font-size:26px;line-height:1.2}
+.kc i{font-style:normal;font-size:11px;color:var(--dim);margin-top:4px}
+.words{width:100%;border-collapse:collapse;margin-top:12px;font-size:15px}
+.words th{text-align:left;font-size:11px;font-weight:400;letter-spacing:.06em;color:var(--dim);padding:8px 10px 8px 0;border-bottom:1px solid var(--fg)}
+.words td{padding:12px 10px 12px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+.words .jpw{font-family:var(--mincho);font-size:22px;white-space:nowrap}
 footer{font-size:12px;color:var(--dim);text-align:center;padding-block:56px 32px}
 @media(max-width:820px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:36px 16px}.book{grid-template-columns:1fr;gap:28px}.book .img{position:static;max-width:240px}}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.top{padding-block:24px 28px}}

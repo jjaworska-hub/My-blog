@@ -7,7 +7,7 @@
   const T = { en: { none: "No translations in this language yet.", back: "← All books", about: "About" },
               pl: { none: "Brak tłumaczeń w tym języku.", back: "← Wszystkie książki", about: "O projekcie" } };
 
-  const NAV = { en: { books: "Books", manga: "Manga", other: "Other", about: "About" }, pl: { books: "Książki", manga: "Manga", other: "Inne", about: "O projekcie" } };
+  const NAV = { en: { books: "Books", manga: "Manga", other: "Other", requests: "Requests", learn: "Learn Japanese", about: "About" }, pl: { books: "Książki", manga: "Manga", other: "Inne", requests: "Prośby", learn: "Nauka japońskiego", about: "O projekcie" } };
   const EMPTY = { en: "Nothing here yet.", pl: "Na razie nic tu nie ma." };
   const cat = b => b.category || "books";
   function grid(c) {
@@ -33,14 +33,96 @@
     view.innerHTML = `<div class="about"><h1>${T[lang].about}</h1>${a.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join("")}</div>`;
   }
   let cur = location.hash.replace(/^#\/?/, "");
+  // ---- requests (shared list; needs the artifact `db` capability) ----
+  const R = {
+    en: { h: "Request a translation", intro: "Tell me what you would like to read in English or Polish. I read every request, but I can't promise when or whether I will translate it.",
+          title: "What should I translate?", link: "Link or details (optional)", lang: "Language", pl: "Polish", en: "English", both: "Both",
+          name: "Your name (optional)", send: "Send request", sending: "Sending…", thanks: "Thank you, your request was added.",
+          list: "Requests so far", none: "No requests yet. Be the first.", need: "Adding a request needs contributor access. Ask the site owner to invite you.",
+          off: "Requests are not available here.", err: "Could not send the request. Please try again.", del: "Remove", by: "by" },
+    pl: { h: "Zgłoś prośbę o tłumaczenie", intro: "Napisz, co chciał(a)byś przeczytać po polsku lub angielsku. Czytam każdą prośbę, ale nie obiecuję, kiedy ani czy to przetłumaczę.",
+          title: "Co przetłumaczyć?", link: "Link lub szczegóły (opcjonalnie)", lang: "Język", pl: "Polski", en: "Angielski", both: "Oba",
+          name: "Twoje imię (opcjonalnie)", send: "Wyślij prośbę", sending: "Wysyłanie…", thanks: "Dziękuję, prośba została dodana.",
+          list: "Dotychczasowe prośby", none: "Na razie brak próśb. Bądź pierwszy.", need: "Dodawanie próśb wymaga dostępu współtwórcy. Poproś właściciela strony o zaproszenie.",
+          off: "Prośby nie są tu dostępne.", err: "Nie udało się wysłać prośby. Spróbuj ponownie.", del: "Usuń", by: "od" }
+  };
+  const claudeReady = (typeof claude !== "undefined" && claude.use) ? Promise.all([claude.use("db"), claude.use("user")]).catch(() => [null, null]) : Promise.resolve([null, null]);
+  let unsub = null;
+  async function requests() {
+    const t = R[lang], [db, user] = await claudeReady;
+    if (cur !== "requests") return;
+    const canWrite = !!db && !(user && (await user.can("data.write")) === false);
+    const isOwner = !!(user && user.isOwner && user.isOwner());
+    view.innerHTML = `<section class="req"><h1>${t.h}</h1><p class="lead">${t.intro}</p>
+      ${!db ? `<p class="empty">${t.off}</p>` : `
+      <form id="reqForm" ${canWrite ? "" : "hidden"}>
+        <label>${t.title}<input id="rTitle" required maxlength="160"></label>
+        <label>${t.link}<textarea id="rNote" rows="3" maxlength="600"></textarea></label>
+        <div class="row"><label>${t.lang}<select id="rLang"><option value="both">${t.both}</option><option value="pl">${t.pl}</option><option value="en">${t.en}</option></select></label>
+        <label>${t.name}<input id="rName" maxlength="60"></label></div>
+        <button type="submit" id="rSend">${t.send}</button><span class="status" id="rStatus" role="status"></span>
+      </form>
+      ${canWrite ? "" : `<p class="empty">${t.need}</p>`}
+      <h2>${t.list}</h2><ul class="reqlist" id="reqList"></ul>`}</section>`;
+    if (!db) return;
+    const listEl = $("reqList"), status = $("rStatus"), col = db.collection("requests");
+    const form = $("reqForm");
+    if (canWrite) form.onsubmit = async e => {
+      e.preventDefault();
+      const btn = $("rSend"); btn.disabled = true; btn.textContent = t.sending; status.textContent = "";
+      try {
+        await col.add({ title: $("rTitle").value.trim(), note: $("rNote").value.trim(), lang: $("rLang").value, name: $("rName").value.trim(), createdAt: Date.now() });
+        form.reset(); status.textContent = t.thanks;
+      } catch (err) { status.textContent = t.err; }
+      btn.disabled = false; btn.textContent = t.send;
+    };
+    const badge = l => l === "both" ? "PL + EN" : l.toUpperCase();
+    unsub = col.orderBy("createdAt", "desc").limit(100).onSnapshot(snap => {
+      listEl.innerHTML = snap.empty ? `<li class="none">${t.none}</li>` : snap.docs.map(d => { const r = d.data();
+        return `<li><span class="badge">${esc(badge(r.lang))}</span><div><strong>${esc(r.title)}</strong>${r.note ? `<p>${esc(r.note)}</p>` : ""}
+          <small>${new Date(r.createdAt).toLocaleDateString(lang)}${r.name ? ` · ${t.by} ${esc(r.name)}` : ""}</small></div>
+          ${isOwner ? `<button class="del" data-id="${esc(d.id)}">${t.del}</button>` : ""}</li>`; }).join("");
+      listEl.querySelectorAll(".del").forEach(b => b.onclick = () => col.doc(b.dataset.id).delete().catch(() => {}));
+    }, () => { listEl.innerHTML = `<li class="none">${t.off}</li>`; });
+  }
+  const $ = id => document.getElementById(id);
+
+  // ---- Learn Japanese ----
+  const KANA = {
+    hira: ["あいうえお","かきくけこ","さしすせそ","たちつてと","なにぬねの","はひふへほ","まみむめも","や.ゆ.よ","らりるれろ","わ...を","ん...."],
+    kata: ["アイウエオ","カキクケコ","サシスセソ","タチツテト","ナニヌネノ","ハヒフヘホ","マミムメモ","ヤ.ユ.ヨ","ラリルレロ","ワ...ヲ","ン...."]
+  };
+  const ROMAJI = ["a i u e o","ka ki ku ke ko","sa shi su se so","ta chi tsu te to","na ni nu ne no","ha hi fu he ho","ma mi mu me mo","ya . yu . yo","ra ri ru re ro","wa . . . wo","n . . . ."];
+  const L = {
+    en: { h: "Learn Japanese", lead: "A small starter kit for reading the series in the original: the two kana alphabets, and words from the books and their covers.",
+          hira: "Hiragana", kata: "Katakana", hiraNote: "Used for grammar and native words.", kataNote: "Used for foreign words, sounds and emphasis. モノノ怪 is written with it.",
+          words: "Words from the series", jp: "Japanese", read: "Reading", mean: "Meaning" },
+    pl: { h: "Nauka japońskiego", lead: "Mały zestaw na start do czytania serii w oryginale: dwa alfabety kana oraz słowa z książek i ich okładek.",
+          hira: "Hiragana", kata: "Katakana", hiraNote: "Używana w gramatyce i słowach rodzimych.", kataNote: "Używana dla słów obcych, dźwięków i podkreślenia. Zapisuje się nią モノノ怪.",
+          words: "Słowa z serii", jp: "Japoński", read: "Czytanie", mean: "Znaczenie" }
+  };
+  function chart(kind) {
+    return `<div class="kana">${KANA[kind].map((row, i) => { const rom = ROMAJI[i].split(" ");
+      return [...row].map((ch, k) => ch === "." ? `<span class="kc empty"></span>` : `<span class="kc"><b>${ch}</b><i>${rom[k]}</i></span>`).join(""); }).join("")}</div>`;
+  }
+  function learn() {
+    const t = L[lang];
+    view.innerHTML = `<section class="learn"><h1>${t.h}</h1><p class="lead">${t.lead}</p>
+      <h2>${t.hira}</h2><p class="note">${t.hiraNote}</p>${chart("hira")}
+      <h2>${t.kata}</h2><p class="note">${t.kataNote}</p>${chart("kata")}
+      <h2>${t.words}</h2><table class="words"><thead><tr><th>${t.jp}</th><th>${t.read}</th><th>${t.mean}</th></tr></thead><tbody>
+      ${LEARN_WORDS.map(w => `<tr><td class="jpw">${esc(w.jp)}</td><td>${esc(w.read)}</td><td>${esc(w[lang])}</td></tr>`).join("")}</tbody></table></section>`;
+  }
+
   function route() {
+    if (unsub) { unsub(); unsub = null; }
     const h = cur;
     const page = h.startsWith("book/") ? cat(BOOKS.find(x => x.id === h.slice(5)) || {}) : (NAV.en[h] ? h : "books");
     document.querySelectorAll("[data-nav]").forEach(a => { a.classList.toggle("on", a.dataset.nav === page); a.textContent = NAV[lang][a.dataset.nav]; });
     document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang === lang));
     document.documentElement.lang = lang;
     view.style.animation = "none"; void view.offsetWidth; view.style.animation = "";
-    if (h === "about") about(); else if (h.startsWith("book/")) book(h.slice(5)); else grid(page);
+    if (h === "learn") learn(); else if (h === "requests") requests(); else if (h === "about") about(); else if (h.startsWith("book/")) book(h.slice(5)); else grid(page);
     scrollTo(0, 0);
   }
   document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { lang = b.dataset.lang; store.set("lang", lang); route(); });
