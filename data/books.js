@@ -4,6 +4,7 @@
   - Add translated chapters to a book's `chapters`. Text is plain text;
     a blank line starts a new paragraph.
   - `main`/`mark`/`author`/`publisher` = text printed on the spine; `paper`/`band` = spine paper and bottom band colours; `w` = spine width in px. `cover` = image path (put images in /img).
+  - `category`: which tab it appears in: "books" (default), "manga" or "other".
   - `tag` = group used by the filter buttons. `year` is optional.
 */
 const BOOKS = [

@@ -7,15 +7,20 @@
   const T = { en: { none: "No translations in this language yet.", back: "← All books", about: "About" },
               pl: { none: "Brak tłumaczeń w tym języku.", back: "← Wszystkie książki", about: "O projekcie" } };
 
-  function grid() {
-    view.innerHTML = `<div class="grid">${BOOKS.map(b => `
+  const NAV = { en: { books: "Books", manga: "Manga", other: "Other", about: "About" }, pl: { books: "Książki", manga: "Manga", other: "Inne", about: "O projekcie" } };
+  const EMPTY = { en: "Nothing here yet.", pl: "Na razie nic tu nie ma." };
+  const cat = b => b.category || "books";
+  function grid(c) {
+    const list = BOOKS.filter(b => cat(b) === c);
+    if (!list.length) { view.innerHTML = `<p class="empty">${EMPTY[lang]}</p>`; return; }
+    view.innerHTML = `<div class="grid">${list.map(b => `
       <a class="card" href="#/book/${esc(b.id)}"><div class="img">${cover(b)}</div>
       <h2>${esc(b.title)}</h2><p>${esc(b.jp)}</p></a>`).join("")}</div>`;
   }
   function book(id) {
-    const b = BOOKS.find(x => x.id === id); if (!b) return grid();
+    const b = BOOKS.find(x => x.id === id); if (!b) return grid("books");
     const done = b.chapters.filter(c => c.text[lang]);
-    view.innerHTML = `<a class="back" href="#/">${T[lang].back}</a>
+    view.innerHTML = `<a class="back" href="#/${cat(b)}">${T[lang].back}</a>
       <article class="book"><div class="img">${cover(b)}</div><div>
       <h1>${esc(b.title)}</h1><p class="jp">${esc(b.jp)}</p>
       <p class="meta">${[b.author, b.year, lang.toUpperCase()].filter(Boolean).map(esc).join("  ·  ")}</p>
@@ -30,11 +35,12 @@
   let cur = location.hash.replace(/^#\/?/, "");
   function route() {
     const h = cur;
-    document.querySelectorAll("[data-nav]").forEach(a => a.classList.toggle("on", a.dataset.nav === (h === "about" ? "about" : "work")));
+    const page = h.startsWith("book/") ? cat(BOOKS.find(x => x.id === h.slice(5)) || {}) : (NAV.en[h] ? h : "books");
+    document.querySelectorAll("[data-nav]").forEach(a => { a.classList.toggle("on", a.dataset.nav === page); a.textContent = NAV[lang][a.dataset.nav]; });
     document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang === lang));
     document.documentElement.lang = lang;
     view.style.animation = "none"; void view.offsetWidth; view.style.animation = "";
-    if (h === "about") about(); else if (h.startsWith("book/")) book(h.slice(5)); else grid();
+    if (h === "about") about(); else if (h.startsWith("book/")) book(h.slice(5)); else grid(page);
     scrollTo(0, 0);
   }
   document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { lang = b.dataset.lang; store.set("lang", lang); route(); });
