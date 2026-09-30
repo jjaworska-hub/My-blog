@@ -24,7 +24,11 @@
     visible().forEach((b, i) => {
       const el = document.createElement("button");
       el.className = "book"; el.setAttribute("aria-label", b.title);
-      el.innerHTML = `<span class="spine" style="background:${b.color}">${esc(b.title)}</span><div class="cover">${face(b)}</div>`;
+      el.style.setProperty("--w", (b.w || 58) + "px");
+      const spine = b.main
+        ? `<span class="spine" style="--paper:${b.paper || "#d8b66e"};--band:${b.band || "#4f8a78"}"><span class="sp-title">${esc(b.main)}</span>${b.mark ? `<span class="sp-mark"><em>${esc(b.mark)}</em></span>` : ""}<span class="sp-author">${esc(b.author || "")}${b.author ? " 著" : ""}</span><span class="sp-band">${esc(b.publisher || "")}</span></span>`
+        : `<span class="spine plain" style="--paper:${b.color};--band:${b.color}">${esc(b.title)}</span>`;
+      el.innerHTML = spine + `<div class="cover">${face(b)}</div>`;
       el.onclick = () => { if (moved) return; if (i === current) openReader(); else select(i); };
       track.appendChild(el); els.push(el);
     });
