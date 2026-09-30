@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mononoke Translations · モノノ怪</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..400&family=Archivo:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -18,7 +20,7 @@
 
   <main id="shelfView">
     <nav class="filters" id="filters" aria-label="Filter"></nav>
-    <div class="shelf" id="shelf" tabindex="0" aria-label="Book shelf"></div>
+    <div class="shelf" id="shelf" tabindex="0" aria-label="Book shelf"><div class="track" id="track"></div></div>
     <section class="info" id="info">
       <h2 id="title"></h2>
       <p class="jp-title" id="jpTitle"></p>
@@ -31,9 +33,10 @@
 
   <main id="readerView" hidden>
     <button class="back" id="backBtn">← BACK / 戻る</button>
-    <article id="reader"></article>
+    <article id="reader" class="reader"></article>
   </main>
 
+  <div class="curtain" id="curtain"></div>
   <footer><span>© ALL TRANSLATIONS ARE FAN WORKS</span><span id="counter"></span></footer>
 </div>
 <script src="data/books.js"></script>

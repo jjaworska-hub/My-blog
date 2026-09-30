@@ -27,5 +27,10 @@ const BOOKS = [
     ]
   },
   { id: "vol2", title: "Mononoke – Volume 2", jp: "モノノ怪 第二巻", year: 2009, tag: "Series", color: "#1f3a6b", cover: "", chapters: [] },
-  { id: "vol3", title: "Mononoke – Volume 3", jp: "モノノ怪 第三巻", year: 2010, tag: "Series", color: "#2e5b3a", cover: "", chapters: [] }
+  { id: "vol3", title: "Mononoke – Volume 3", jp: "モノノ怪 第三巻", year: 2010, tag: "Series", color: "#2e5b3a", cover: "", chapters: [] },
+  { id: "vol4", title: "Mononoke – Volume 4", jp: "モノノ怪 第四巻", year: 2011, tag: "Series", color: "#8a6d1f", cover: "", chapters: [] },
+  { id: "vol5", title: "Mononoke – Volume 5", jp: "モノノ怪 第五巻", year: 2012, tag: "Series", color: "#5b2e6b", cover: "", chapters: [] },
+  { id: "vol6", title: "Mononoke – Volume 6", jp: "モノノ怪 第六巻", year: 2013, tag: "Series", color: "#1f5b6b", cover: "", chapters: [] },
+  { id: "vol7", title: "Mononoke – Volume 7", jp: "モノノ怪 第七巻", year: 2014, tag: "Series", color: "#6b3a1f", cover: "", chapters: [] },
+  { id: "vol8", title: "Mononoke – Volume 8", jp: "モノノ怪 第八巻", year: 2015, tag: "Series", color: "#3a3a3a", cover: "", chapters: [] }
 ];
