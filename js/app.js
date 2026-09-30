@@ -4,8 +4,8 @@
   let lang = store.get("lang") === "pl" ? "pl" : "en";
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const cover = b => b.cover ? `<img src="${esc(b.cover)}" alt="${esc(b.title)}">` : `<div style="height:100%;background:${esc(b.color)}"></div>`;
-  const T = { en: { none: "No translations in this language yet.", back: "← All books", about: "About" },
-              pl: { none: "Brak tłumaczeń w tym języku.", back: "← Wszystkie książki", about: "O projekcie" } };
+  const T = { en: { none: "No translations in this language yet.", back: "← Back", about: "About" },
+              pl: { none: "Brak tłumaczeń w tym języku.", back: "← Wróć", about: "O projekcie" } };
 
   const NAV = { en: { books: "Books", manga: "Manga", other: "Other", requests: "Requests", learn: "Learn Japanese", about: "About" }, pl: { books: "Książki", manga: "Manga", other: "Inne", requests: "Prośby", learn: "Nauka japońskiego", about: "O projekcie" } };
   const EMPTY = { en: "Nothing here yet.", pl: "Na razie nic tu nie ma." };
@@ -15,14 +15,14 @@
     if (!list.length) { view.innerHTML = `<p class="empty">${EMPTY[lang]}</p>`; return; }
     view.innerHTML = `<div class="grid">${list.map(b => `
       <a class="card" href="#/book/${esc(b.id)}"><div class="img">${cover(b)}</div>
-      <h2>${esc(b.title)}</h2><p>${esc(b.jp)}</p></a>`).join("")}</div>`;
+      <h2>${esc(b.title)}</h2>${b.jp ? `<p>${esc(b.jp)}</p>` : ""}</a>`).join("")}</div>`;
   }
   function book(id) {
     const b = BOOKS.find(x => x.id === id); if (!b) return grid("books");
     const done = b.chapters.filter(c => c.text[lang]);
     view.innerHTML = `<a class="back" href="#/${cat(b)}">${T[lang].back}</a>
       <article class="book"><div class="img">${cover(b)}</div><div>
-      <h1>${esc(b.title)}</h1><p class="jp">${esc(b.jp)}</p>
+      <h1>${esc(b.title)}</h1>${b.jp ? `<p class="jp">${esc(b.jp)}</p>` : ""}
       <p class="meta">${[b.author, b.year, lang.toUpperCase()].filter(Boolean).map(esc).join("  ·  ")}</p>
       ${done.length ? done.map(c => `<h3>${esc(c.title[lang] || c.title.en || "")}</h3>` +
         c.text[lang].split(/\n\s*\n/).map(p => `<p class="t">${esc(p)}</p>`).join("")).join("") : `<p class="empty">${T[lang].none}</p>`}
