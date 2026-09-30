@@ -37,7 +37,7 @@
     els.forEach((e, k) => e.classList.toggle("active", k === current));
     const b = list[current];
     $("title").textContent = b.title; $("jpTitle").textContent = b.jp;
-    $("meta").textContent = `${b.year}  ·  ${b.tag.toUpperCase()}`;
+    $("meta").textContent = [b.author, b.year, b.tag.toUpperCase()].filter(Boolean).join("  ·  ");
     $("counter").textContent = `${current + 1} / ${list.length}`;
     const info = $("info"); info.classList.remove("in"); void info.offsetWidth; info.classList.add("in");
     if (first) snap = true;
