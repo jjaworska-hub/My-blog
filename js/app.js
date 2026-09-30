@@ -1,138 +1,50 @@
 (() => {
-  const $ = id => document.getElementById(id);
-  const shelf = $("shelf"), track = $("track"), filters = $("filters"), frame = document.querySelector(".frame");
+  const view = document.getElementById("view");
   const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
-  let lang = store.get("lang") || "en";
-  let filter = "ALL", current = 0, els = [];
-  const visible = () => BOOKS.filter(b => filter === "ALL" || b.tag === filter);
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const face = b => `<div class="face" style="background:${b.color}">${b.cover ? `<img src="${esc(b.cover)}" alt="">` : `<h4>${esc(b.title)}</h4><small>${esc(b.jp)}</small>`}</div>`;
+  let lang = store.get("lang") === "pl" ? "pl" : "en";
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const cover = b => b.cover ? `<img src="${esc(b.cover)}" alt="${esc(b.title)}">` : `<div style="height:100%;background:${esc(b.color)}"></div>`;
+  const T = { en: { none: "No translations in this language yet.", back: "← All books", about: "About" },
+              pl: { none: "Brak tłumaczeń w tym języku.", back: "← Wszystkie książki", about: "O projekcie" } };
 
-  function buildFilters() {
-    const tags = ["ALL", ...new Set(BOOKS.map(b => b.tag))];
-    filters.innerHTML = "";
-    tags.forEach(t => {
-      const b = document.createElement("button");
-      b.textContent = t; b.className = t === filter ? "on" : "";
-      b.onclick = () => { filter = t; current = 0; buildFilters(); buildShelf(); };
-      filters.appendChild(b);
-    });
+  function grid() {
+    view.innerHTML = `<div class="grid">${BOOKS.map(b => `
+      <a class="card" href="#/book/${esc(b.id)}"><div class="img">${cover(b)}</div>
+      <h2>${esc(b.title)}</h2><p>${esc(b.jp)}</p></a>`).join("")}</div>`;
   }
-
-  function buildShelf() {
-    track.innerHTML = ""; els = [];
-    visible().forEach((b, i) => {
-      const el = document.createElement("button");
-      el.className = "book"; el.setAttribute("aria-label", b.title);
-      el.style.setProperty("--w", (b.w || 58) + "px");
-      const spine = b.main
-        ? `<span class="spine" style="--paper:${b.paper || "#d8b66e"};--band:${b.band || "#4f8a78"}"><span class="sp-title">${esc(b.main)}</span>${b.mark ? `<span class="sp-mark"><em>${esc(b.mark)}</em></span>` : ""}<span class="sp-author">${esc(b.author || "")}${b.author ? " 著" : ""}</span><span class="sp-band">${esc(b.publisher || "")}</span></span>`
-        : `<span class="spine plain" style="--paper:${b.color};--band:${b.color}">${esc(b.title)}</span>`;
-      el.innerHTML = spine + `<div class="cover">${face(b)}</div>`;
-      el.onclick = () => { if (moved) return; if (i === current) openReader(); else select(i); };
-      track.appendChild(el); els.push(el);
-    });
-    select(current, true);
-  }
-
-  function select(i, first) {
-    const list = visible(); if (!list.length) return;
-    current = Math.max(0, Math.min(list.length - 1, i));
-    els.forEach((e, k) => e.classList.toggle("active", k === current));
-    const b = list[current];
-    $("title").textContent = b.title; $("jpTitle").textContent = b.jp;
-    $("meta").textContent = [b.author, b.year, b.tag.toUpperCase()].filter(Boolean).join("  ·  ");
-    $("counter").textContent = `${current + 1} / ${list.length}`;
-    const info = $("info"); info.classList.remove("in"); void info.offsetWidth; info.classList.add("in");
-    if (first) snap = true;
-  }
-
-  // smooth centring: chase the active book's centre every frame, so it follows the width animation
-  let tx = 0, snap = true;
-  (function tick() {
-    const a = els[current];
-    if (a && !$("shelfView").hidden) {
-      const target = shelf.clientWidth / 2 - (a.offsetLeft + a.offsetWidth / 2);
-      tx = snap ? target : tx + (target - tx) * 0.09;
-      if (Math.abs(target - tx) < 0.3) tx = target;
-      snap = false;
-      track.style.transform = `translate3d(${tx}px,0,0)`;
-    }
-    requestAnimationFrame(tick);
-  })();
-
-  // input: buttons, keys, wheel, drag
-  $("prev").onclick = () => select(current - 1);
-  $("next").onclick = () => select(current + 1);
-  shelf.addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft") select(current - 1);
-    if (e.key === "ArrowRight") select(current + 1);
-    if (e.key === "Enter") openReader();
-  });
-  let acc = 0, lock = 0;
-  shelf.addEventListener("wheel", e => {
-    e.preventDefault();
-    const now = performance.now(); if (now < lock) return;
-    acc += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (Math.abs(acc) > 40) { select(current + (acc > 0 ? 1 : -1)); acc = 0; lock = now + 420; }
-  }, { passive: false });
-  let down = false, startX = 0, moved = false, lastStep = 0;
-  shelf.addEventListener("pointerdown", e => { down = true; moved = false; startX = lastStep = e.clientX; });
-  addEventListener("pointermove", e => {
-    if (!down) return;
-    if (Math.abs(e.clientX - startX) > 6) { moved = true; shelf.classList.add("drag"); }
-    if (moved && Math.abs(e.clientX - lastStep) > 70) { select(current + (e.clientX < lastStep ? 1 : -1)); lastStep = e.clientX; }
-  });
-  addEventListener("pointerup", () => { down = false; shelf.classList.remove("drag"); setTimeout(() => moved = false); });
-
-  // reader
-  function renderReader() {
-    const b = visible()[current];
-    let h = `<div><h2>${esc(b.title)}</h2><p class="sub">${esc(b.jp)}  ·  ${lang.toUpperCase()}</p>`;
+  function book(id) {
+    const b = BOOKS.find(x => x.id === id); if (!b) return grid();
     const done = b.chapters.filter(c => c.text[lang]);
-    if (!done.length) h += `<p class="empty">${lang === "pl" ? "Brak tłumaczeń w tym języku." : "No translations in this language yet."}</p>`;
-    done.forEach(c => {
-      h += `<h3>${esc(c.title[lang] || c.title.en || "")}</h3>` + c.text[lang].split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join("");
-    });
-    h += `</div><figure><div class="poster">${face(b)}</div></figure>`;
-    $("reader").innerHTML = h;
+    view.innerHTML = `<a class="back" href="#/">${T[lang].back}</a>
+      <article class="book"><div class="img">${cover(b)}</div><div>
+      <h1>${esc(b.title)}</h1><p class="jp">${esc(b.jp)}</p>
+      <p class="meta">${[b.author, b.year, lang.toUpperCase()].filter(Boolean).map(esc).join("  ·  ")}</p>
+      ${done.length ? done.map(c => `<h3>${esc(c.title[lang] || c.title.en || "")}</h3>` +
+        c.text[lang].split(/\n\s*\n/).map(p => `<p class="t">${esc(p)}</p>`).join("")).join("") : `<p class="empty">${T[lang].none}</p>`}
+      </div></article>`;
   }
-  let busy = false;
-  function openReader() {
-    if (busy || !visible().length) return; busy = true;
-    const c = $("curtain"), a = els[current].getBoundingClientRect(), f = frame.getBoundingClientRect();
-    c.style.setProperty("--cx", (a.left + a.width / 2 - f.left) + "px");
-    c.style.setProperty("--cy", (a.top + a.height / 2 - f.top) + "px");
-    c.classList.add("go");
-    setTimeout(() => {
-      renderReader();
-      frame.classList.add("reading");
-      $("shelfView").hidden = true; $("readerView").hidden = false;
-      c.classList.remove("go"); c.style.transition = "none"; void c.offsetWidth; c.style.transition = "";
-      frame.classList.remove("reading-in"); void frame.offsetWidth; frame.classList.add("reading-in");
-      scrollTo(0, 0); busy = false;
-    }, 800);
+  function about() {
+    const a = (typeof ABOUT !== "undefined" && ABOUT[lang]) || "";
+    view.innerHTML = `<div class="about"><h1>${T[lang].about}</h1>${a.split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join("")}</div>`;
   }
-  function closeReader() {
-    if (busy) return; busy = true; frame.classList.add("leaving");
-    setTimeout(() => {
-      frame.classList.remove("leaving", "reading", "reading-in");
-      $("readerView").hidden = true; $("shelfView").hidden = false;
-      snap = true; select(current); busy = false;
-    }, 420);
+  let cur = location.hash.replace(/^#\/?/, "");
+  function route() {
+    const h = cur;
+    document.querySelectorAll("[data-nav]").forEach(a => a.classList.toggle("on", a.dataset.nav === (h === "about" ? "about" : "work")));
+    document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang === lang));
+    document.documentElement.lang = lang;
+    view.style.animation = "none"; void view.offsetWidth; view.style.animation = "";
+    if (h === "about") about(); else if (h.startsWith("book/")) book(h.slice(5)); else grid();
+    scrollTo(0, 0);
   }
-  $("readBtn").onclick = e => { e.preventDefault(); openReader(); };
-  $("backBtn").onclick = closeReader;
-  $("aboutBtn").onclick = e => e.preventDefault();
-
-  document.querySelectorAll(".lang button").forEach(b => {
-    b.classList.toggle("on", b.dataset.lang === lang);
-    b.onclick = () => {
-      lang = b.dataset.lang; store.set("lang", lang);
-      document.querySelectorAll(".lang button").forEach(x => x.classList.toggle("on", x === b));
-      if (!$("readerView").hidden) { renderReader(); frame.classList.remove("reading-in"); void frame.offsetWidth; frame.classList.add("reading-in"); }
-    };
+  document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { lang = b.dataset.lang; store.set("lang", lang); route(); });
+  // in-page navigation without depending on hash events (works inside sandboxed frames)
+  document.addEventListener("click", e => {
+    const a = e.target.closest('a[href^="#"]'); if (!a) return;
+    e.preventDefault(); cur = a.getAttribute("href").replace(/^#\/?/, "");
+    try { history.replaceState(null, "", "#/" + cur); } catch (err) {}
+    route();
   });
-
-  buildFilters(); buildShelf();
+  addEventListener("hashchange", () => { cur = location.hash.replace(/^#\/?/, ""); route(); });
+  route();
 })();
