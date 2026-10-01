@@ -25,7 +25,7 @@
   function grid(c) {
     const list = ALL.filter(p => p.category === c);
     if (!list.length) { view.innerHTML = `<p class="empty">${EMPTY[lang]}</p>`; return; }
-    view.innerHTML = `<div class="grid">${list.map(p => `
+    view.innerHTML = `<div class="grid${c === "desktop" ? " cols2" : ""}">${list.map(p => `
       <a class="card" href="#/project/${esc(p.id)}"><div class="img">${cover(p)}</div>
       <h2>${esc(p.title)}</h2><p>${esc(p.sub)}</p></a>`).join("")}</div>`;
   }
