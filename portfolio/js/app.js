@@ -8,8 +8,8 @@
     : `<div class="ph" style="background:linear-gradient(145deg,${esc(p.color)},${esc(p.color2)})">${esc(p.sub)}</div>`;
   const T = { en: { back: "← Back", about: "About" }, pl: { back: "← Wróć", about: "O mnie" } };
   const NAV = {
-    en: { desktop: "Desktop", mobile: "Mobile", workshops: "Workshops", requests: "Requests", gameux: "Game UX/UI", about: "About" },
-    pl: { desktop: "Desktop", mobile: "Mobile", workshops: "Warsztaty", requests: "Zapytania", gameux: "Game UX/UI", about: "O mnie" }
+    en: { desktop: "Desktop", mobile: "Mobile", workshops: "Workshops", gameux: "Game UX/UI", requests: "Requests", about: "About" },
+    pl: { desktop: "Desktop", mobile: "Mobile", workshops: "Warsztaty", gameux: "Game UX/UI", requests: "Zapytania", about: "O mnie" }
   };
   const EMPTY = { en: "Nothing here yet.", pl: "Na razie nic tu nie ma." };
   const R = {
