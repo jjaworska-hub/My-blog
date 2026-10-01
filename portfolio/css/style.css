@@ -14,7 +14,7 @@ main{flex:1;max-width:1240px;width:100%;margin-inline:auto;animation:in .5s ease
 
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:48px 24px}
 .card{display:block;text-align:center}
-.card .img{aspect-ratio:5/7;background:var(--tile);overflow:hidden}
+.card .img{aspect-ratio:4/3;background:var(--tile);overflow:hidden}
 .card img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .8s cubic-bezier(.2,.7,.2,1),opacity .3s}
 .card:hover img{transform:scale(1.03);opacity:.92}
 .card h2{font-size:18px;font-weight:400;margin-top:16px}
@@ -63,3 +63,42 @@ footer{font-size:12px;color:var(--dim);text-align:center;padding-block:56px 32px
 .card .img,.book .img{position:relative}
 .ph{height:100%;display:flex;align-items:flex-end;padding:18px;color:#fff;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
 .book .desc{font-size:17px;line-height:1.8;max-width:62ch;color:#2a2a2a;margin-top:28px}
+
+.case{max-width:760px;margin-inline:auto;padding-bottom:64px}
+.case .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.case h1{font-size:clamp(30px,4.4vw,48px);font-weight:300;letter-spacing:-.02em;line-height:1.1;margin-top:14px;text-wrap:balance}
+.case .dek{font-size:18px;line-height:1.7;color:#444;margin-top:20px}
+.cs-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 28px;margin:32px 0 8px;padding-block:22px;border-block:1px solid var(--line)}
+.cs-meta dt{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.cs-meta dd{margin:4px 0 0;font-size:15px;line-height:1.5}
+.cs-nda{font-size:13px;color:var(--dim);margin-top:16px}
+.cs-text{margin-top:56px}
+.cs-text h2{font-size:24px;font-weight:400;letter-spacing:-.01em;margin-bottom:16px;text-wrap:balance}
+.cs-text p{font-size:17px;line-height:1.8;color:#2a2a2a;margin-bottom:1em}
+.cs-text blockquote,.cs-pull{border-left:2px solid var(--fg);padding-left:20px;font-size:19px;line-height:1.6;font-weight:300;margin:24px 0}
+.cs-pull{margin-block:56px;font-size:clamp(22px,3vw,30px);line-height:1.35}
+.cs-visual{margin:48px 0 0}
+.cs-visual img{display:block;width:100%;height:auto;background:var(--tile)}
+.cs-visual figcaption,.cs-note{font-size:12px;color:var(--dim);margin-top:10px}
+.cs-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:24px}
+.cs-cards>div{background:var(--tile);padding:18px}
+.cs-cards h3,.cs-ba h3{font-size:15px;font-weight:500;margin-bottom:6px}
+.cs-cards p,.cs-ba p{font-size:14px;line-height:1.6;margin:0;color:#444}
+.cs-chal{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;padding-block:22px;border-top:1px solid var(--line)}
+.cs-chal>span{font-size:13px;color:var(--dim);padding-top:4px}
+.cs-chal h3{font-size:18px;font-weight:400;margin-bottom:10px}
+.cs-chal p{font-size:15px;line-height:1.7;margin-bottom:.6em}
+.cs-chal b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;color:var(--dim)}
+.cs-ba{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cs-ba>div{padding:20px;border:1px solid var(--line)}
+.cs-ba>.after{border-color:var(--fg)}
+.cs-compare{position:relative;overflow:hidden;background:var(--tile);max-width:100%}
+.cs-compare img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+.cs-clip{position:absolute;inset:0}
+.cs-line{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.25);transform:translateX(-1px);pointer-events:none}
+.cs-compare input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
+.cs-tag{position:absolute;top:10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.65);color:#fff;padding:3px 8px;pointer-events:none}
+.cs-tag.l{left:10px}.cs-tag.r{right:10px}
+.cs-next{display:block;margin-top:72px;padding-top:24px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.cs-next strong{display:block;margin-top:8px;font-size:20px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--fg)}
+@media(max-width:560px){.cs-meta,.cs-ba{grid-template-columns:1fr}}
