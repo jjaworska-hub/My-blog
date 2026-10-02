@@ -193,8 +193,7 @@ a.deck:hover span{color:#ddd}
 @media(max-width:600px){.pager{justify-content:center}.pager>button{min-width:0;flex:1 1 40%}.pgnums{order:3;flex-basis:100%}.pager>.pgprev span,.pager>.pgnext span{display:inline}}
 
 /* right-to-left book: first page on the right, pages turn to the left */
-.spread{direction:rtl}
-.spread .page{direction:ltr}
+/* pages stay in reading order: Japanese on the left, translation on the right */
 .pager,.pgnums{direction:rtl}
 .pager>button,.pgn{direction:ltr}
 .pager>.pgprev{text-align:right}
