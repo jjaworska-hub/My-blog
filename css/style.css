@@ -214,3 +214,11 @@ a.deck:hover span{color:#ddd}
 .pgnext{left:-22px}
 .pgprev{right:-22px}
 @media(max-width:820px){.pgside{width:30px;height:54px;font-size:24px;background:rgba(255,255,255,.9)}.pgnext{left:-13px}.pgprev{right:-13px}}
+
+/* equal-height pages */
+.stack{display:grid}
+.stack>.spread{grid-area:1/1;visibility:hidden;pointer-events:none}
+.stack>.spread.cur{visibility:visible;pointer-events:auto}
+#rdr>h3{min-height:62px;display:grid;align-items:end}
+#rdr>h3>.rt{grid-area:1/1;visibility:hidden}
+#rdr>h3>.rt.cur{visibility:visible}

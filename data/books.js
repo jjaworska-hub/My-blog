@@ -34,7 +34,8 @@ const BOOKS = [
           "en": "About Tsurezuregusa and Its Author",
           "pl": "O „Tsurezuregusa” i jego autorze"
         },
-        "sentences": [
+        "pages": [
+        [
           {
             "jp": "『徒然草{つれづれぐさ}』は、鎌倉時代{かまくらじだい}（一一八五{せんひゃくはちじゅうご}〜一三三三年{せんさんびゃくさんじゅうさんねん}）の終{お}わり頃{ごろ}、兼好{けんこう}が書{か}きました。",
             "en": "Tsurezuregusa was written by Kenkō toward the end of the Kamakura period (1185–1333).",
@@ -295,6 +296,8 @@ const BOOKS = [
               }
             ]
           },
+        ],
+        [
           {
             "para": true,
             "jp": "『徒然草{つれづれぐさ}』には、仏教{ぶっきょう}のことや、不思議{ふしぎ}な話{はなし}、人{ひと}の生{い}き方{かた}など、二百四十三{にひゃくよんじゅうさん}の話{はなし}があります。",
@@ -684,6 +687,7 @@ const BOOKS = [
               }
             ]
           }
+        ]
         ]
       },
       {

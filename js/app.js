@@ -109,29 +109,45 @@
       if (selected) rdr.querySelectorAll(`.sent[data-s="${selected}"]`).forEach(e => e.classList.add("sel"));
       refreshBm();
     };
+    // All pages are laid out in one grid cell, so every page is as tall as the tallest one
+    // and the arrows never move when you turn the page.
+    let built = false;
+    function buildReader() {
+      const pager = spreads.length > 1 ? `<nav class="pager" aria-label="${t.pages}"><span class="pgnums">${spreads.map((_, k) => `<button type="button" class="pgn" data-pg="${k}" aria-label="${t.page} ${k + 1}">${k + 1}</button>`).join("")}</span></nav>` : "";
+      const titleOf = (sp, si) => { const ct = sp.c.title || {};
+        return `<span class="rt" data-si="${si}">${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span>${spreads.length > 1 ? ` <small class="chpage">${t.page} ${si + 1} / ${spreads.length}</small>` : ""}</span>`; };
+      rdr.innerHTML = `<h3 id="rtitle">${spreads.map(titleOf).join("")}</h3>
+        <div class="tools"><p class="hint">${t.hint}</p><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></div>
+        <div class="stage">${spreads.length > 1 ? `<button type="button" class="pgside pgnext" aria-label="${t.nextPage}"><span>‹</span></button><button type="button" class="pgside pgprev" aria-label="${t.prevPage}"><span>›</span></button>` : ""}
+        <div class="stack">${spreads.map((sp, si) => `<div class="spread" data-si="${si}">
+          <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(sp.list, "jp")}</div>
+          <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(sp.list, "tr")}</div></div>`).join("")}</div></div>${pager}`;
+      built = true;
+    }
     function renderPage(n, dir) {
       if (!spreads.length) return;
+      if (!built) buildReader();
       page = Math.max(0, Math.min(spreads.length - 1, n)); pageMemo = { id: b.id, n: page };
-      const sp = spreads[page], ct = sp.c.title || {};
-      const pager = spreads.length > 1 ? `<nav class="pager" aria-label="${t.pages}">
-        <span class="pgnums">${spreads.map((_, k) => `<button type="button" class="pgn${k === page ? " on" : ""}" data-pg="${k}" aria-label="${t.page} ${k + 1}"${k === page ? ' aria-current="page"' : ""}>${k + 1}</button>`).join("")}</span></nav>` : "";
-      rdr.innerHTML = `<h3>${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span>${spreads.length > 1 ? ` <small class="chpage">${t.page} ${page + 1} / ${spreads.length}</small>` : ""}</h3>
-        <div class="tools"><p class="hint">${t.hint}</p><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></div>
-        <div class="stage">${spreads.length > 1 ? `<button type="button" class="pgside pgnext" aria-label="${t.nextPage}"${page === spreads.length - 1 ? " disabled" : ""}><span>‹</span></button><button type="button" class="pgside pgprev" aria-label="${t.prevPage}"${page === 0 ? " disabled" : ""}><span>›</span></button>` : ""}
-        <div class="spread${dir ? " turn-" + dir : ""}">
-          <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(sp.list, "jp")}</div>
-          <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(sp.list, "tr")}</div></div></div>${pager}`;
+      rdr.querySelectorAll("#rtitle>.rt").forEach((el, si) => el.classList.toggle("cur", si === page));
+      rdr.querySelectorAll(".stack>.spread").forEach((el, si) => {
+        el.classList.remove("turn-next", "turn-prev");
+        el.classList.toggle("cur", si === page);
+        if (si === page && dir) { void el.offsetWidth; el.classList.add("turn-" + dir); }
+      });
+      rdr.querySelectorAll(".pgn").forEach(el => {
+        const on = +el.dataset.pg === page; el.classList.toggle("on", on);
+        if (on) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
+      });
+      const pv = rdr.querySelector(".pgprev"), nx = rdr.querySelector(".pgnext");
+      if (pv) pv.disabled = page === 0;
+      if (nx) nx.disabled = page === spreads.length - 1;
       applyMarks();
     }
-    const goPage = (n, scroll) => {
-      const to = Math.max(0, Math.min(spreads.length - 1, n)); if (to === page && rdr.firstChild) return;
-      const was = document.activeElement && document.activeElement.classList;
-      const side = was && (was.contains("pgprev") ? ".pgprev" : was.contains("pgnext") ? ".pgnext" : null);
+    const goPage = n => {
+      const to = Math.max(0, Math.min(spreads.length - 1, n)); if (to === page && built) return;
       renderPage(to, to > page ? "next" : "prev");
-      if (side) { const nb = rdr.querySelector(side); if (nb && !nb.disabled) nb.focus({ preventScroll: true }); }
-      if (scroll) window.scrollTo({ top: Math.max(0, rdr.getBoundingClientRect().top + scrollY - 20), behavior: "smooth" });
     };
-    pageApi = { go: d => goPage(page + d, true) };
+    pageApi = { go: d => goPage(page + d) };
 
     // ---- sentence modal ----
     const light = (key, on) => rdr.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.toggle("hl", on));
@@ -237,9 +253,9 @@
       else if (el.closest("#resumeBtn")) goToBm();
       else if (el.closest("#notesBtn")) setNotes(!notes.classList.contains("open"));
       else if (el.closest(".nclose")) setNotes(false);
-      else if (el.closest(".pgn")) goPage(+el.closest(".pgn").dataset.pg, true);
-      else if (el.closest(".pgprev")) goPage(page - 1, true);
-      else if (el.closest(".pgnext")) goPage(page + 1, true);
+      else if (el.closest(".pgn")) goPage(+el.closest(".pgn").dataset.pg);
+      else if (el.closest(".pgprev")) goPage(page - 1);
+      else if (el.closest(".pgnext")) goPage(page + 1);
       else if (el.closest(".furitoggle")) {
         furi = !furi; store.set("furi", furi ? "on" : "off");
         view.querySelector(".book").classList.toggle("nofuri", !furi);
