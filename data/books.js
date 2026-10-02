@@ -8,6 +8,8 @@
         furigana: write the reading in braces right after the kanji, e.g. 漢字{かんじ}; `para: true` starts a new paragraph.
         See the sample entry "Tsurezuregusa" in the Other tab.
   - `main`/`mark`/`author`/`publisher` = text printed on the spine; `paper`/`band` = spine paper and bottom band colours; `w` = spine width in px. `cover` = image path (put images in /img).
+  - `flashcards`: path to this book's vocabulary file (e.g. "files/shu-flashcards.apkg").
+    While it is empty, the book page shows a disabled "Download flashcards" button.
   - `category`: which tab it appears in: "books" (default), "manga" or "other".
   - `tag` = group used by the filter buttons. `year` is optional.
 */
