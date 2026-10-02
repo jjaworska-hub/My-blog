@@ -17,27 +17,34 @@
       <a class="card" href="#/book/${esc(b.id)}"><div class="img">${cover(b)}</div>
       <h2>${esc(b.title)}</h2>${b.jp ? `<p>${esc(b.jp)}</p>` : ""}</a>`).join("")}</div>`;
   }
-  let modalApi = null;
+  let modalApi = null, pageApi = null, pageMemo = { id: null, n: 0 }; // last page per visit, so switching language keeps your place
   document.addEventListener("keydown", e => {
+    if (pageApi && !(modalApi && document.body.classList.contains("modal-open"))) {
+      const tag = (e.target.tagName || "").toLowerCase();
+      if (!e.altKey && !e.ctrlKey && !e.metaKey && tag !== "textarea" && tag !== "input" && tag !== "select") {
+        if (e.key === "ArrowLeft") pageApi.go(-1); else if (e.key === "ArrowRight") pageApi.go(1);
+      }
+      return;
+    }
     if (!modalApi || !document.body.classList.contains("modal-open")) return;
     if (e.key === "Escape") { e.preventDefault(); modalApi.close(); }
     else if (e.key === "ArrowLeft") { e.preventDefault(); modalApi.step(-1); }
     else if (e.key === "ArrowRight") { e.preventDefault(); modalApi.step(1); }
   });
   const D = {
-    en: { bmMark: "Bookmark here", bmClear: "Remove bookmark", resume: "Continue where you stopped", notes: "Notes", notesPh: "Write your notes about this book…", saved: "Saved", nosave: "Can’t save here: browser storage is unavailable.", local: "Notes are saved in this browser, on this device.", deck: "Download flashcards", deckSoon: "Coming soon", deckHint: "Vocabulary from this book", words: "Words", grammar: "Grammar", note: "Note", close: "Close", sentence: (n, N) => `Sentence ${n} of ${N}`, prev: "Previous sentence", next: "Next sentence", furi: "Furigana", hint: "Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
-    pl: { bmMark: "Zakładka tutaj", bmClear: "Usuń zakładkę", resume: "Wróć do zakładki", notes: "Notatki", notesPh: "Zapisz tu notatki o tej książce…", saved: "Zapisano", nosave: "Nie można zapisać: pamięć przeglądarki jest niedostępna.", local: "Notatki zapisują się w tej przeglądarce, na tym urządzeniu.", deck: "Pobierz fiszki", deckSoon: "Wkrótce", deckHint: "Słownictwo z tej książki", sentence: (n, N) => `Zdanie ${n} z ${N}`, prev: "Poprzednie zdanie", next: "Następne zdanie", furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
+    en: { page: "Page", pages: "Pages", prevPage: "Previous", nextPage: "Next", bmMark: "Bookmark here", bmClear: "Remove bookmark", resume: "Continue where you stopped", notes: "Notes", notesPh: "Write your notes about this book…", saved: "Saved", nosave: "Can’t save here: browser storage is unavailable.", local: "Notes are saved in this browser, on this device.", deck: "Download flashcards", deckSoon: "Coming soon", deckHint: "Vocabulary from this book", words: "Words", grammar: "Grammar", note: "Note", close: "Close", sentence: (n, N) => `Sentence ${n} of ${N}`, prev: "Previous sentence", next: "Next sentence", furi: "Furigana", hint: "Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
+    pl: { page: "Strona", pages: "Strony", prevPage: "Poprzednia", nextPage: "Następna", bmMark: "Zakładka tutaj", bmClear: "Usuń zakładkę", resume: "Wróć do zakładki", notes: "Notatki", notesPh: "Zapisz tu notatki o tej książce…", saved: "Zapisano", nosave: "Nie można zapisać: pamięć przeglądarki jest niedostępna.", local: "Notatki zapisują się w tej przeglądarce, na tym urządzeniu.", deck: "Pobierz fiszki", deckSoon: "Wkrótce", deckHint: "Słownictwo z tej książki", sentence: (n, N) => `Zdanie ${n} z ${N}`, prev: "Poprzednie zdanie", next: "Następne zdanie", furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
   };
   // 漢字{かんじ} -> <ruby>漢字<rt>かんじ</rt></ruby> (input is escaped first)
   const ruby = str => esc(str).replace(/([\u4e00-\u9fff\u3005\u3006\u30f6]+)\{([^}]+)\}/g, "<ruby>$1<rt>$2</rt></ruby>");
   let furi = store.get("furi") !== "off";
   const tr = (s) => s[lang] || s.en || "";
-  function sentencesHTML(c, ci, side) {
+  function sentencesHTML(list, side) {
     let out = "<p>";
-    c.sentences.forEach((s, i) => {
+    list.forEach(({ s, key }, i) => {
       if (i && s.para) out += "</p><p>";
       const txt = side === "jp" ? ruby(s.jp) : esc(tr(s));
-      out += `<span class="sent" tabindex="0" role="button" data-s="${ci}-${i}">${txt}</span>${side === "jp" ? "" : " "}`;
+      out += `<span class="sent" tabindex="0" role="button" data-s="${key}">${txt}</span>${side === "jp" ? "" : " "}`;
     });
     return out + "</p>";
   }
@@ -60,21 +67,25 @@
   function book(id) {
     const b = BOOKS.find(x => x.id === id); if (!b) return grid("books");
     const t = D[lang];
-    const chapters = b.chapters.filter(c => c.sentences || (c.text && c.text[lang]));
-    const body = chapters.map((c, ci) => {
-      const ct = c.title || {};
-      const title = `<h3>${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span></h3>`;
-      if (c.sentences) return title + `<div class="tools"><p class="hint">${t.hint}</p><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></div><div class="spread">
-        <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(c, ci, "jp")}</div>
-        <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(c, ci, "tr")}</div></div>`;
-      return title + c.text[lang].split(/\n\s*\n/).map(p => `<p class="t">${esc(p)}</p>`).join("");
-    }).join("");
+    // every bilingual page of the book, in reading order; plain-text chapters are shown below
+    const spreads = [], plain = [];
+    b.chapters.forEach((c, ci) => {
+      if (c.sentences || c.pages) {
+        const pgs = c.pages || [c.sentences];
+        pgs.forEach((sents, pi) => spreads.push({ c, ci, pi, n: pgs.length, list: sents.map((s, i) => ({ s, key: `${ci}-${pi}-${i}` })) }));
+      } else if (c.text && c.text[lang]) plain.push(c);
+    });
+    const loc = {}; spreads.forEach((sp, si) => sp.list.forEach((x, i) => { loc[x.key] = { si, s: x.s }; }));
+    const order = spreads.flatMap(sp => sp.list.map(x => x.key));
+    const plainHTML = plain.map(c => { const ct = c.title || {};
+      return `<h3>${esc(tr(ct))}</h3>` + c.text[lang].split(/\n\s*\n/).map(p => `<p class="t">${esc(p)}</p>`).join(""); }).join("");
+
     view.innerHTML = `<a class="back" href="#/${cat(b)}">${T[lang].back}</a>
       <article class="book${furi ? "" : " nofuri"}"><header class="bhead"><div class="img">${cover(b)}</div><div>
       <h1>${esc(b.title)}</h1>${b.jp ? `<p class="jp">${esc(b.jp)}</p>` : ""}
       <p class="meta">${[b.author, b.year].filter(Boolean).map(esc).join("  ·  ")}</p>
       <div class="bactions"><button type="button" class="resume" id="resumeBtn" hidden></button></div></div></header>
-      ${body || `<p class="empty">${T[lang].none}</p>`}
+      <div id="rdr"></div>${plainHTML}${!spreads.length && !plain.length ? `<p class="empty">${T[lang].none}</p>` : ""}
       <div class="bfoot"><div class="deckrow">
         ${b.flashcards ? `<a class="deck" href="${esc(b.flashcards)}" download><b>${t.deck}</b><span>${t.deckHint}</span></a>`
           : `<button type="button" class="deck off" disabled aria-disabled="true"><b>${t.deck}</b><span>${t.deckHint} · ${t.deckSoon}</span></button>`}
@@ -87,20 +98,49 @@
       </aside>
       <div class="mback" id="detail" hidden></div></article>`;
 
-    // sentence interaction: hover/focus lights both pages, click opens the breakdown
-    const detail = $("detail");
+    const detail = $("detail"), rdr = $("rdr");
     const bmKeyName = `bm:${b.id}`, notesKeyName = `notes:${b.id}`;
     let bmKey = store.get(bmKeyName);
-    const order = [...view.querySelectorAll(".page.jp .sent")].map(e => e.dataset.s);
-    let selected = null, opener = null;
-    const light = (key, on) => view.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.toggle("hl", on));
+    if (bmKey && /^\d+-\d+$/.test(bmKey)) bmKey = bmKey.replace("-", "-0-"); // older bookmarks
+    let selected = null, opener = null, page = 0;
+
+    // ---- page rendering ----
+    const applyMarks = () => {
+      if (selected) rdr.querySelectorAll(`.sent[data-s="${selected}"]`).forEach(e => e.classList.add("sel"));
+      refreshBm();
+    };
+    function renderPage(n, dir) {
+      if (!spreads.length) return;
+      page = Math.max(0, Math.min(spreads.length - 1, n)); pageMemo = { id: b.id, n: page };
+      const sp = spreads[page], ct = sp.c.title || {};
+      const pager = spreads.length > 1 ? `<nav class="pager" aria-label="${t.pages}">
+        <button type="button" class="pgprev" ${page === 0 ? "disabled" : ""}>‹ <span>${t.prevPage}</span></button>
+        <span class="pgnums">${spreads.map((_, k) => `<button type="button" class="pgn${k === page ? " on" : ""}" data-pg="${k}" aria-label="${t.page} ${k + 1}"${k === page ? ' aria-current="page"' : ""}>${k + 1}</button>`).join("")}</span>
+        <button type="button" class="pgnext" ${page === spreads.length - 1 ? "disabled" : ""}><span>${t.nextPage}</span> ›</button></nav>` : "";
+      rdr.innerHTML = `<h3>${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span>${spreads.length > 1 ? ` <small class="chpage">${t.page} ${page + 1} / ${spreads.length}</small>` : ""}</h3>
+        <div class="tools"><p class="hint">${t.hint}</p><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></div>
+        <div class="spread${dir ? " turn-" + dir : ""}">
+          <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(sp.list, "jp")}</div>
+          <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(sp.list, "tr")}</div></div>${pager}`;
+      applyMarks();
+    }
+    const goPage = (n, scroll) => {
+      const to = Math.max(0, Math.min(spreads.length - 1, n)); if (to === page && rdr.firstChild) return;
+      renderPage(to, to > page ? "next" : "prev");
+      if (scroll) window.scrollTo({ top: Math.max(0, rdr.getBoundingClientRect().top + scrollY - 20), behavior: "smooth" });
+    };
+    pageApi = { go: d => goPage(page + d, true) };
+
+    // ---- sentence modal ----
+    const light = (key, on) => rdr.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.toggle("hl", on));
     const show = key => {
-      view.querySelectorAll(".sent.sel").forEach(e => e.classList.remove("sel"));
-      const [ci, i] = key.split("-").map(Number);
+      const L = loc[key]; if (!L) return;
+      if (L.si !== page) renderPage(L.si, L.si > page ? "next" : "prev");
+      rdr.querySelectorAll(".sent.sel").forEach(e => e.classList.remove("sel"));
       selected = key;
-      view.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.add("sel"));
+      rdr.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.add("sel"));
       const n = order.indexOf(key);
-      detail.innerHTML = detailHTML(chapters[ci].sentences[i], n + 1, order.length, bmKey === key);
+      detail.innerHTML = detailHTML(L.s, n + 1, order.length, bmKey === key);
       detail.querySelector(".mprev").disabled = n <= 0;
       detail.querySelector(".mnext").disabled = n >= order.length - 1;
     };
@@ -112,8 +152,9 @@
     const closeModal = () => {
       detail.hidden = true; detail.innerHTML = ""; selected = null;
       document.body.classList.remove("modal-open"); modalApi = null;
-      view.querySelectorAll(".sent.sel").forEach(e => e.classList.remove("sel"));
-      if (opener && opener.focus) opener.focus({ preventScroll: true });
+      rdr.querySelectorAll(".sent.sel").forEach(e => e.classList.remove("sel"));
+      const back = opener && document.contains(opener) ? opener : rdr.querySelector(".sent");
+      if (back && back.focus) back.focus({ preventScroll: true });
     };
     const step = d => {
       const n = order.indexOf(selected) + d; if (n < 0 || n >= order.length) return;
@@ -121,29 +162,35 @@
       const want = detail.querySelector(d < 0 ? ".mprev" : ".mnext");
       (want && !want.disabled ? want : detail.querySelector(".dclose")).focus({ preventScroll: true });
     };
-    // bookmark: the sentence where the reader stopped (kept in this browser)
+
+    // ---- bookmark ----
     const resumeBtn = $("resumeBtn");
-    const refreshBm = () => {
-      view.querySelectorAll(".sent.bm").forEach(e => e.classList.remove("bm"));
-      const ok = !!bmKey && order.includes(bmKey);
-      if (ok) view.querySelectorAll(`.sent[data-s="${bmKey}"]`).forEach(e => e.classList.add("bm"));
+    function refreshBm() {
+      rdr.querySelectorAll(".sent.bm").forEach(e => e.classList.remove("bm"));
+      rdr.querySelectorAll(".pgn.hasbm").forEach(e => e.classList.remove("hasbm"));
+      const ok = !!bmKey && !!loc[bmKey];
+      if (ok) {
+        rdr.querySelectorAll(`.sent[data-s="${bmKey}"]`).forEach(e => e.classList.add("bm"));
+        const pn = rdr.querySelector(`.pgn[data-pg="${loc[bmKey].si}"]`); if (pn) pn.classList.add("hasbm");
+      }
       resumeBtn.hidden = !ok; resumeBtn.textContent = t.resume;
       const m = detail.querySelector(".mbm");
       if (m) { const on = ok && bmKey === selected; m.setAttribute("aria-pressed", on); m.querySelector("span").textContent = on ? t.bmClear : t.bmMark; }
-    };
+    }
     const toggleBm = () => {
       if (!selected) return;
       if (bmKey === selected) { bmKey = null; store.del(bmKeyName); } else { bmKey = selected; store.set(bmKeyName, bmKey); }
       refreshBm();
     };
     const goToBm = () => {
-      const el = view.querySelector(`.page.jp .sent[data-s="${bmKey}"]`); if (!el) return;
+      if (!bmKey || !loc[bmKey]) return;
+      if (loc[bmKey].si !== page) renderPage(loc[bmKey].si, loc[bmKey].si > page ? "next" : "prev");
+      const el = rdr.querySelector(`.page.jp .sent[data-s="${bmKey}"]`); if (!el) return;
       el.scrollIntoView({ block: "center", behavior: "smooth" });
       el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
     };
-    refreshBm();
 
-    // notes drawer: one notebook per book (kept in this browser)
+    // ---- notes drawer: one notebook per book, kept in this browser ----
     const notes = $("notes"), nText = $("nText"), nStat = $("nStat"), nBtn = $("notesBtn");
     const dot = nBtn.querySelector(".ndot");
     const saved0 = store.get(notesKeyName) || "";
@@ -163,6 +210,7 @@
       else { saveNotes(); nStat.textContent = t.local; nBtn.focus({ preventScroll: true }); }
     };
     notes.onkeydown = e => { if (e.key === "Escape") { e.stopPropagation(); setNotes(false); } };
+
     modalApi = { close: closeModal, step };
     detail.onclick = e => {
       if (e.target === detail || e.target.closest(".dclose")) closeModal();
@@ -182,18 +230,23 @@
     view.onmouseout = e => { const k = keyOf(e); if (k) light(k, false); };
     view.onfocusin = view.onmouseover; view.onfocusout = view.onmouseout;
     view.onclick = e => {
-      const k = keyOf(e);
+      const k = keyOf(e), el = e.target.closest ? e.target : null; if (!el) return;
       if (k) openModal(k);
-      else if (e.target.closest("#resumeBtn")) goToBm();
-      else if (e.target.closest("#notesBtn")) setNotes(!notes.classList.contains("open"));
-      else if (e.target.closest(".nclose")) setNotes(false);
-      else if (e.target.closest(".furitoggle")) {
+      else if (el.closest("#resumeBtn")) goToBm();
+      else if (el.closest("#notesBtn")) setNotes(!notes.classList.contains("open"));
+      else if (el.closest(".nclose")) setNotes(false);
+      else if (el.closest(".pgn")) goPage(+el.closest(".pgn").dataset.pg, true);
+      else if (el.closest(".pgprev")) goPage(page - 1, true);
+      else if (el.closest(".pgnext")) goPage(page + 1, true);
+      else if (el.closest(".furitoggle")) {
         furi = !furi; store.set("furi", furi ? "on" : "off");
         view.querySelector(".book").classList.toggle("nofuri", !furi);
         view.querySelectorAll(".furitoggle").forEach(x => { x.setAttribute("aria-pressed", furi); x.textContent = `${t.furi}: ${furi ? "ON" : "OFF"}`; });
       }
     };
     view.onkeydown = e => { if ((e.key === "Enter" || e.key === " ") && keyOf(e)) { e.preventDefault(); openModal(keyOf(e)); } };
+
+    renderPage(pageMemo.id === b.id ? pageMemo.n : 0);
   }
   function about() {
     const a = (typeof ABOUT !== "undefined" && ABOUT[lang]) || "";
@@ -283,7 +336,7 @@
 
   function route() {
     if (unsub) { unsub(); unsub = null; }
-    document.body.classList.remove("modal-open");
+    document.body.classList.remove("modal-open"); modalApi = null; pageApi = null;
     view.onmouseover = view.onmouseout = view.onfocusin = view.onfocusout = view.onclick = view.onkeydown = null;
     const h = cur;
     const page = h.startsWith("book/") ? cat(BOOKS.find(x => x.id === h.slice(5)) || {}) : (NAV.en[h] ? h : "books");

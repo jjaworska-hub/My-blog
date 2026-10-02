@@ -172,3 +172,22 @@ a.deck:hover{background:var(--fg);color:#fff}
 a.deck:hover span{color:#ddd}
 .deck.off{border-color:var(--line);color:#8a8a8a;cursor:not-allowed;background:#faf9f6}
 @media(max-width:600px){.notesfab{right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}.notes{width:100%}.deck{width:100%;min-width:0}.mbm{margin-left:0}}
+
+/* page turning */
+.chpage{font-size:12px;font-weight:400;letter-spacing:.08em;color:var(--dim);margin-left:10px;white-space:nowrap}
+.spread.turn-next{animation:turnNext .38s cubic-bezier(.2,.8,.2,1) both}
+.spread.turn-prev{animation:turnPrev .38s cubic-bezier(.2,.8,.2,1) both}
+@keyframes turnNext{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes turnPrev{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;flex-wrap:wrap}
+.pager>button{font:inherit;font-size:14px;color:var(--fg);background:#fff;border:1px solid var(--fg);padding:9px 18px;cursor:pointer;transition:background .2s,color .2s,opacity .2s;min-width:128px}
+.pager>button:hover:not(:disabled){background:var(--fg);color:#fff}
+.pager>button:disabled{opacity:.3;cursor:default;border-color:var(--line)}
+.pager>.pgprev{text-align:left}.pager>.pgnext{text-align:right}
+.pgnums{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;flex:1;min-width:0}
+.pgn{position:relative;min-width:36px;height:36px;padding:0 6px;font:inherit;font-size:14px;color:var(--fg);background:none;border:1px solid transparent;border-radius:50%;cursor:pointer;transition:background .15s,border-color .15s}
+.pgn:hover{border-color:var(--fg)}
+.pgn.on{background:var(--fg);color:#fff;border-color:var(--fg)}
+.pgn.hasbm::after{content:"";position:absolute;top:1px;right:3px;width:7px;height:7px;border-radius:50%;background:#e0301e;box-shadow:0 0 0 2px #fff}
+.pager button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+@media(max-width:600px){.pager{justify-content:center}.pager>button{min-width:0;flex:1 1 40%}.pgnums{order:3;flex-basis:100%}.pager>.pgprev span,.pager>.pgnext span{display:inline}}
