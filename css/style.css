@@ -33,8 +33,9 @@ main{flex:1;max-width:1240px;width:100%;margin-inline:auto;animation:in .5s ease
 .nocover{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--mincho);font-size:34px;letter-spacing:.12em;writing-mode:vertical-rl}
 .tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px}
 .hint{font-size:13px;color:var(--dim);margin:0;min-width:0;flex:1 1 320px}
-.furitoggle{font:inherit;font-size:12px;letter-spacing:.04em;background:none;border:1px solid var(--line);color:var(--fg);padding:5px 12px;cursor:pointer;transition:background .2s,color .2s}
-.furitoggle[aria-pressed=true]{background:var(--fg);color:#fff;border-color:var(--fg)}
+.furitoggle{font:inherit;font-size:12px;letter-spacing:.04em;background:var(--fg);border:1px solid var(--fg);color:#fff;padding:5px 12px;cursor:pointer;transition:opacity .2s}
+.furitoggle:hover{opacity:.82}
+.furitoggle:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 ruby{ruby-align:center}
 rt{font-family:var(--font);font-size:.48em;letter-spacing:0;color:#6b6b6b;font-weight:400}
 .nofuri rt{display:none}
