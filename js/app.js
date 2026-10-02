@@ -17,9 +17,16 @@
       <a class="card" href="#/book/${esc(b.id)}"><div class="img">${cover(b)}</div>
       <h2>${esc(b.title)}</h2>${b.jp ? `<p>${esc(b.jp)}</p>` : ""}</a>`).join("")}</div>`;
   }
+  let modalApi = null;
+  document.addEventListener("keydown", e => {
+    if (!modalApi || !document.body.classList.contains("modal-open")) return;
+    if (e.key === "Escape") { e.preventDefault(); modalApi.close(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); modalApi.step(-1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); modalApi.step(1); }
+  });
   const D = {
-    en: { words: "Words", grammar: "Grammar", note: "Note", close: "Close", furi: "Furigana", hint: "Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
-    pl: { furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
+    en: { words: "Words", grammar: "Grammar", note: "Note", close: "Close", sentence: (n, N) => `Sentence ${n} of ${N}`, prev: "Previous sentence", next: "Next sentence", furi: "Furigana", hint: "Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
+    pl: { sentence: (n, N) => `Zdanie ${n} z ${N}`, prev: "Poprzednie zdanie", next: "Następne zdanie", furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
   };
   // 漢字{かんじ} -> <ruby>漢字<rt>かんじ</rt></ruby> (input is escaped first)
   const ruby = str => esc(str).replace(/([\u4e00-\u9fff\u3005\u3006\u30f6]+)\{([^}]+)\}/g, "<ruby>$1<rt>$2</rt></ruby>");
@@ -34,15 +41,20 @@
     });
     return out + "</p>";
   }
-  function detailHTML(s) {
+  function detailHTML(s, n, N) {
     const t = D[lang], m = o => esc(o && (o[lang] || o.en) || "");
-    return `<button class="dclose" aria-label="${t.close}">×</button>
-      <div class="dtop"><p class="djp" lang="ja">${ruby(s.jp)}</p><p class="dtr">${esc(tr(s))}</p></div>
+    return `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mjp">
+      <header class="mhead"><span class="mcount">${t.sentence(n, N)}</span>
+        <span class="mnav"><button type="button" class="mprev" aria-label="${t.prev}">‹</button><button type="button" class="mnext" aria-label="${t.next}">›</button>
+        <button type="button" class="dclose" aria-label="${t.close}">×</button></span></header>
+      <div class="mbody">
+      <div class="dtop"><p class="djp" id="mjp" lang="ja">${ruby(s.jp)}</p><p class="dtr">${esc(tr(s))}</p></div>
       <div class="dcols">
       ${s.words && s.words.length ? `<section><h4>${t.words}</h4><table>${s.words.map(w => `<tr><td class="dw" lang="ja">${esc(w.word)}</td><td class="dr">${esc(w.reading || "")}</td><td>${m(w.meaning)}</td></tr>`).join("")}</table></section>` : ""}
       ${s.grammar && s.grammar.length ? `<section><h4>${t.grammar}</h4><ul>${s.grammar.map(g => `<li><b lang="ja">${esc(g.pattern)}</b><span>${m(g.explanation)}</span></li>`).join("")}</ul></section>` : ""}
-      ${s.note ? `<section><h4>${t.note}</h4><p>${m(s.note)}</p></section>` : ""}
-      </div>`;
+      </div>
+      ${s.note ? `<section class="dnote"><h4>${t.note}</h4><p>${m(s.note)}</p></section>` : ""}
+      </div></div>`;
   }
   function book(id) {
     const b = BOOKS.find(x => x.id === id); if (!b) return grid("books");
@@ -61,23 +73,52 @@
       <h1>${esc(b.title)}</h1>${b.jp ? `<p class="jp">${esc(b.jp)}</p>` : ""}
       <p class="meta">${[b.author, b.year].filter(Boolean).map(esc).join("  ·  ")}</p></div></header>
       ${body || `<p class="empty">${T[lang].none}</p>`}
-      <aside class="detail" id="detail" hidden></aside></article>`;
+      <div class="mback" id="detail" hidden></div></article>`;
 
     // sentence interaction: hover/focus lights both pages, click opens the breakdown
     const detail = $("detail");
-    let selected = null;
+    const order = [...view.querySelectorAll(".page.jp .sent")].map(e => e.dataset.s);
+    let selected = null, opener = null;
     const light = (key, on) => view.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.toggle("hl", on));
-    const pick = key => {
+    const show = key => {
       view.querySelectorAll(".sent.sel").forEach(e => e.classList.remove("sel"));
-      if (!key || key === selected) { selected = null; detail.hidden = true; view.querySelector(".book").classList.remove("open"); return; }
       const [ci, i] = key.split("-").map(Number);
       selected = key;
       view.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.add("sel"));
-      detail.innerHTML = detailHTML(chapters[ci].sentences[i]); detail.hidden = false;
-      view.querySelector(".book").classList.add("open");
-      // keep the chosen sentence visible above the breakdown card
-      const first = view.querySelector(`.sent[data-s="${key}"]`);
-      if (first) { const over = first.getBoundingClientRect().bottom - (innerHeight - detail.offsetHeight) + 24; if (over > 0) scrollBy({ top: over, behavior: "smooth" }); }
+      const n = order.indexOf(key);
+      detail.innerHTML = detailHTML(chapters[ci].sentences[i], n + 1, order.length);
+      detail.querySelector(".mprev").disabled = n <= 0;
+      detail.querySelector(".mnext").disabled = n >= order.length - 1;
+    };
+    const openModal = key => {
+      opener = document.activeElement;
+      show(key); detail.hidden = false; document.body.classList.add("modal-open");
+      detail.querySelector(".dclose").focus({ preventScroll: true });
+    };
+    const closeModal = () => {
+      detail.hidden = true; detail.innerHTML = ""; selected = null;
+      document.body.classList.remove("modal-open"); modalApi = null;
+      view.querySelectorAll(".sent.sel").forEach(e => e.classList.remove("sel"));
+      if (opener && opener.focus) opener.focus({ preventScroll: true });
+    };
+    const step = d => {
+      const n = order.indexOf(selected) + d; if (n < 0 || n >= order.length) return;
+      show(order[n]);
+      const want = detail.querySelector(d < 0 ? ".mprev" : ".mnext");
+      (want && !want.disabled ? want : detail.querySelector(".dclose")).focus({ preventScroll: true });
+    };
+    modalApi = { close: closeModal, step };
+    detail.onclick = e => {
+      if (e.target === detail || e.target.closest(".dclose")) closeModal();
+      else if (e.target.closest(".mprev")) step(-1);
+      else if (e.target.closest(".mnext")) step(1);
+    };
+    detail.onkeydown = e => { // keep Tab focus inside the dialog
+      if (e.key !== "Tab") return;
+      const f = [...detail.querySelectorAll("button:not([disabled])")]; if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     const keyOf = e => { const s = e.target.closest && e.target.closest(".sent"); return s ? s.dataset.s : null; };
     view.onmouseover = e => { const k = keyOf(e); if (k) light(k, true); };
@@ -85,15 +126,14 @@
     view.onfocusin = view.onmouseover; view.onfocusout = view.onmouseout;
     view.onclick = e => {
       const k = keyOf(e);
-      if (k) pick(k);
-      else if (e.target.closest(".dclose")) pick(null);
+      if (k) openModal(k);
       else if (e.target.closest(".furitoggle")) {
         furi = !furi; store.set("furi", furi ? "on" : "off");
         view.querySelector(".book").classList.toggle("nofuri", !furi);
         view.querySelectorAll(".furitoggle").forEach(x => { x.setAttribute("aria-pressed", furi); x.textContent = `${t.furi}: ${furi ? "ON" : "OFF"}`; });
       }
     };
-    view.onkeydown = e => { if (e.key === "Escape") pick(null); if ((e.key === "Enter" || e.key === " ") && keyOf(e)) { e.preventDefault(); pick(keyOf(e)); } };
+    view.onkeydown = e => { if ((e.key === "Enter" || e.key === " ") && keyOf(e)) { e.preventDefault(); openModal(keyOf(e)); } };
   }
   function about() {
     const a = (typeof ABOUT !== "undefined" && ABOUT[lang]) || "";
@@ -183,6 +223,7 @@
 
   function route() {
     if (unsub) { unsub(); unsub = null; }
+    document.body.classList.remove("modal-open");
     view.onmouseover = view.onmouseout = view.onfocusin = view.onfocusout = view.onclick = view.onkeydown = null;
     const h = cur;
     const page = h.startsWith("book/") ? cat(BOOKS.find(x => x.id === h.slice(5)) || {}) : (NAV.en[h] ? h : "books");
