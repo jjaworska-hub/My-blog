@@ -68,7 +68,7 @@
     const t = D[lang], m = o => esc(o && (o[lang] || o.en) || "");
     return `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mjp">
       <header class="mhead"><span class="mcount">${t.sentence(n, N)}</span>
-        <button type="button" class="mbm" aria-pressed="${!!isBm}"><i></i><span>${isBm ? t.bmClear : t.bmMark}</span></button>
+        <button type="button" class="mbm" aria-pressed="${!!isBm}"><svg viewBox="0 0 16 20" aria-hidden="true"><path d="M2.5 1.75h11a.75.75 0 0 1 .75.75v15.9a.4.4 0 0 1-.64.32L8 14.6l-5.61 4.12a.4.4 0 0 1-.64-.32V2.5a.75.75 0 0 1 .75-.75z"/></svg><span>${isBm ? t.bmClear : t.bmMark}</span></button>
         <span class="mnav"><button type="button" class="mprev" aria-label="${t.prev}">‹</button><button type="button" class="mnext" aria-label="${t.next}">›</button>
         <button type="button" class="dclose" aria-label="${t.close}">×</button></span></header>
       <div class="mbody">
@@ -390,26 +390,55 @@
 
   // ---- Admin panel (owner only; needs the db capability, so it exists in the Claude preview) ----
   const A = {
-    en: { h: "Admin panel", lead: "Type the page number (as the pager shows it, e.g. 8 for “Page 8”), paste the text and save. One line is one sentence; the three boxes must match line for line. A line with --- continues on the next page. Furigana: 漢字{かんじ}.",
+    en: { h: "Admin panel", lead: "Paste the Japanese text and the translations as plain text, with no need to match lines. In the Japanese box a new line starts a new paragraph and a line with --- starts a new page. The panel splits the text into sentences and matches the translations; then you can fix every sentence on its own.",
           book: "Book", chap: "Chapter", num: "Page number", run: "Running head (optional, used when the page is new)", runHint: "e.g. 11　第一話　鎌鼬",
-          jp: "Original (Japanese)", en: "English", pl: "Polish", save: "Add to page", saving: "Saving…", saved: "Added.", upd: "Update", cancel: "Cancel editing",
-          mismatch: "The boxes do not match: pages or lines differ", empty: "Add at least one line of Japanese text.", err: "Saving failed. Try again.", badnum: "Enter a page number.",
+          jp: "Original (Japanese)", en: "English (whole text)", pl: "Polish (whole text)", jpPh: "Paste the Japanese text. New line = new paragraph. --- = new page.", trPh: "Paste the whole translation. Paragraphs may be separate lines.",
+          split: "Split into sentences and match", rowsH: "Sentences and translations", sent: "sentences", pages: "pages",
+          furiAll: "Add furigana automatically", alignAll: "Match translations with Claude", working: "Working…", aiFail: "Claude could not do that. Try again.", aiDenied: "Claude was not allowed to run.",
+          furiDone: "Furigana added to {n} sentences.", alignDone: "Translations matched.", noTr: "Paste a translation first.", kTip: "Click any Japanese word to edit its reading. Words without a reading are underlined with dots.",
+          para: "new paragraph", newPage: "A new page starts at this sentence", newPageS: "new page", review: "Check this one: the translation did not split evenly",
+          mergeUp: "Merge with the previous sentence", addBelow: "Add a sentence below", rm: "Delete", editTxt: "Edit Japanese text", doneTxt: "Done",
+          kPh: "reading", kSave: "OK", kDel: "Remove", kCancel: "Cancel",
+          save: "Add to page", saving: "Saving…", saved: "Added.", upd: "Update", cancel: "Cancel editing", empty: "Paste some Japanese text first.", err: "Saving failed. Try again.", badnum: "Enter a page number.",
           list: "Text added here", none2: "Nothing added yet.", edit: "Edit", del: "Delete", denied: "This panel is available only to the site owner, in the Claude preview.",
-          lines: "lines", pages: "pages", pg: "Page", has: "This book has {n} pages. Page {p} exists: the text will be added at its end.",
+          lines: "sentences", pg: "Page", has: "This book has {n} pages. Page {p} exists: the text will be added at its end.",
           fresh: "A new page {p} will be added at the end.", gap: "A new page will be added at the end, as page {p}, because pages up to {n} exist so far." },
-    pl: { h: "Panel administratora", lead: "Wpisz numer strony (taki, jaki pokazuje paginacja, np. 8 dla „Page 8”), wklej tekst i zapisz. Jedna linia to jedno zdanie; trzy pola muszą zgadzać się linia w linię. Linia z --- ciągnie tekst na następną stronę. Furigana: 漢字{かんじ}.",
+    pl: { h: "Panel administratora", lead: "Wklej tekst japoński i tłumaczenia jako zwykły tekst, bez dbania o linie. W polu japońskim nowa linia zaczyna nowy akapit, a linia z --- nową stronę. Panel sam podzieli tekst na zdania i dopasuje tłumaczenia, a potem możesz poprawić każde zdanie osobno.",
           book: "Książka", chap: "Rozdział", num: "Numer strony", run: "Nagłówek bieżący (opcjonalnie, używany dla nowej strony)", runHint: "np. 11　第一話　鎌鼬",
-          jp: "Oryginał (japoński)", en: "Angielski", pl: "Polski", save: "Dodaj na stronę", saving: "Zapisywanie…", saved: "Dodano.", upd: "Zaktualizuj", cancel: "Anuluj edycję",
-          mismatch: "Pola się nie zgadzają: różna liczba stron lub linii", empty: "Dodaj przynajmniej jedną linię tekstu japońskiego.", err: "Nie udało się zapisać. Spróbuj ponownie.", badnum: "Wpisz numer strony.",
+          jp: "Oryginał (japoński)", en: "Angielski (cały tekst)", pl: "Polski (cały tekst)", jpPh: "Wklej tekst japoński. Nowa linia = nowy akapit. --- = nowa strona.", trPh: "Wklej całe tłumaczenie. Akapity mogą być w osobnych liniach.",
+          split: "Podziel na zdania i dopasuj", rowsH: "Zdania i tłumaczenia", sent: "zdań", pages: "stron",
+          furiAll: "Dodaj furiganę automatycznie", alignAll: "Dopasuj tłumaczenia przez Claude", working: "Pracuję…", aiFail: "Claude nie dał rady. Spróbuj ponownie.", aiDenied: "Claude nie dostał zgody na uruchomienie.",
+          furiDone: "Furigana dodana w {n} zdaniach.", alignDone: "Tłumaczenia dopasowane.", noTr: "Najpierw wklej tłumaczenie.", kTip: "Kliknij dowolne słowo japońskie, aby poprawić jego czytanie. Słowa bez czytania są podkreślone kropkami.",
+          para: "nowy akapit", newPage: "Od tego zdania zaczyna się nowa strona", newPageS: "nowa strona", review: "Sprawdź to zdanie: tłumaczenie nie podzieliło się równo",
+          mergeUp: "Scal z poprzednim zdaniem", addBelow: "Dodaj zdanie poniżej", rm: "Usuń", editTxt: "Edytuj tekst japoński", doneTxt: "Gotowe",
+          kPh: "czytanie", kSave: "OK", kDel: "Usuń", kCancel: "Anuluj",
+          save: "Dodaj na stronę", saving: "Zapisywanie…", saved: "Dodano.", upd: "Zaktualizuj", cancel: "Anuluj edycję", empty: "Najpierw wklej tekst japoński.", err: "Nie udało się zapisać. Spróbuj ponownie.", badnum: "Wpisz numer strony.",
           list: "Tekst dodany tutaj", none2: "Nic jeszcze nie dodano.", edit: "Edytuj", del: "Usuń", denied: "Ten panel jest dostępny tylko dla właściciela strony, w podglądzie w Claude.",
-          lines: "linii", pages: "stron", pg: "Strona", has: "Ta książka ma {n} stron. Strona {p} istnieje: tekst zostanie dopisany na jej końcu.",
+          lines: "zdań", pg: "Strona", has: "Ta książka ma {n} stron. Strona {p} istnieje: tekst zostanie dopisany na jej końcu.",
           fresh: "Zostanie dodana nowa strona {p} na końcu.", gap: "Zostanie dodana nowa strona na końcu, jako strona {p}, bo na razie istnieją strony do {n}." }
   };
+  // sentence splitting for the admin panel
+  const KJ = () => /([一-鿿々〆ヶ]+)(?:\{([^}]*)\})?/g;
+  const stripF = x => x.replace(/\{[^}]*\}/g, "");
+  const splitJp = par => (par.match(/[^。！？!?]*(?:[。！？!?]+[」』）)]*|$)/g) || []).map(x => x.trim()).filter(Boolean);
+  const splitTr = par => par.split(/(?<=[.!?…][”"’'»)\]]?)\s+(?=[“"‘'«(\[—–-]?\s?[A-ZĄĆĘŁŃÓŚŹŻ0-9])/).map(x => x.trim()).filter(Boolean);
+  const parseTr = v => v.split("\n").map(x => x.trim()).filter(x => x && !/^-{3,}$/.test(x)).map(splitTr);
+  const fitTo = (arr, m) => arr.length > m ? [...arr.slice(0, m - 1), arr.slice(m - 1).join(" ")] : arr.concat(Array(m - arr.length).fill(""));
+  // put translation sentences onto the Japanese rows: paragraph by paragraph when the paragraph counts agree, otherwise in order
+  function alignText(rows, tp, key) {
+    if (!tp.length) return;
+    const groups = []; rows.forEach((r, i) => { (groups[r.pi] = groups[r.pi] || []).push(i); });
+    if (tp.length === groups.length) groups.forEach((g, gi) => { const arr = fitTo(tp[gi], g.length), odd = tp[gi].length !== g.length;
+      g.forEach((ri, k) => { rows[ri][key] = arr[k]; if (odd) rows[ri].flag = true; }); });
+    else { const arr = fitTo(tp.flat(), rows.length); rows.forEach((r, i) => { r[key] = arr[i]; r.flag = true; }); }
+  }
   async function admin() {
     const t = A[lang], [db, user] = await claudeReady;
     if (cur !== "admin") return;
     const owner = !!(db && user && await user.isOwner());
     if (!owner) { view.innerHTML = `<section class="req"><h1>${t.h}</h1><p class="empty">${t.denied}</p></section>`; return; }
+    const sample = (typeof claude !== "undefined" && claude.use) ? await claude.use("sample").catch(() => null) : null;
+    if (cur !== "admin") return;
     const col = db.collection("pages");
     view.innerHTML = `<section class="req adm"><h1>${t.h}</h1><p class="lead">${t.lead}</p>
       <form id="admForm">
@@ -418,61 +447,147 @@
         <label id="aChapL" hidden>${t.chap}<select id="aChap"></select></label>
         <p class="hint" id="aHint"></p>
         <label>${t.run}<input id="aHead" maxlength="80" placeholder="${t.runHint}" lang="ja"></label>
-        <label>${t.jp} <i id="cJp"></i><textarea id="aJp" rows="10" lang="ja" required></textarea></label>
-        <label>${t.en} <i id="cEn"></i><textarea id="aEn" rows="8"></textarea></label>
-        <label>${t.pl} <i id="cPl"></i><textarea id="aPl" rows="8"></textarea></label>
-        <div class="actions"><button type="submit" id="aSave">${t.save}</button><button type="button" id="aCancel" hidden>${t.cancel}</button><span class="status" id="aStatus" role="status"></span></div>
+        <label>${t.jp}<textarea id="aJp" rows="8" lang="ja" placeholder="${t.jpPh}"></textarea></label>
+        <label>${t.en}<textarea id="aEn" rows="6" placeholder="${t.trPh}"></textarea></label>
+        <label>${t.pl}<textarea id="aPl" rows="6" placeholder="${t.trPh}"></textarea></label>
+        <div class="actions"><button type="button" id="aSplit">${t.split}</button></div>
+        <div id="aWork" hidden>
+          <div class="wbar"><h3>${t.rowsH}</h3><span id="aCount"></span>
+            <button type="button" id="aFuriAll" ${sample ? "" : "hidden"}>${t.furiAll}</button>
+            <button type="button" id="aAlignAll" ${sample ? "" : "hidden"}>${t.alignAll}</button></div>
+          <p class="hint">${t.kTip}</p>
+          <div id="aRows"></div>
+        </div>
+        <div class="actions"><button type="submit" id="aSave" disabled>${t.save}</button><button type="button" id="aCancel" hidden>${t.cancel}</button><span class="status" id="aStatus" role="status"></span></div>
       </form>
       <h2>${t.list}</h2><ul class="reqlist" id="aList"></ul></section>`;
-    // a line "---" starts the next page; pages are lists of non-empty lines
-    const split = v => v.split("\n").reduce((acc, l) => { const x = l.trim(); if (/^-{3,}$/.test(x)) acc.push([]); else if (x) acc[acc.length - 1].push(x); return acc; }, [[]]);
-    const count = () => { [["Jp", "aJp"], ["En", "aEn"], ["Pl", "aPl"]].forEach(([k, id]) => { const pg = split($(id).value);
-      $("c" + k).textContent = `(${pg.length} ${t.pages}, ${pg.reduce((n, a) => n + a.length, 0)} ${t.lines})`; }); };
-    const chapters = () => { const b = BOOKS.find(x => x.id === $("aBook").value); const out = [];
+    let rows = [], kedit = null, editId = null, docs = [];
+    const st = m => { $("aStatus").textContent = m; };
+    // ---- where the text goes (page number hint) ----
+    const chapters = () => { const b = BOOKS.find(x => x.id === $("aBook").value), out = [];
       (b ? b.chapters : []).forEach((c, ci) => { const pgs = c.pages || (c.sentences ? [c.sentences] : null); if (pgs) out.push({ ci, c, n: pgs.length }); }); return out; };
     const fillChap = () => { const cs = chapters(); $("aChap").innerHTML = cs.map(x => `<option value="${x.ci}">${esc(x.c.title ? (x.c.title[lang] || x.c.title.en || "").replace(/\{[^}]*\}/g, "") : "#" + (x.ci + 1))} (${x.n})</option>`).join("");
       $("aChapL").hidden = cs.length < 2; };
     const hint = () => { const cs = chapters(), cx = cs.find(x => String(x.ci) === $("aChap").value) || cs[cs.length - 1], p = parseInt($("aNum").value, 10), h = $("aHint");
       if (!cx || !(p > 0)) { h.textContent = ""; return; }
       h.textContent = p <= cx.n ? t.has.replace("{n}", cx.n).replace("{p}", p) : p === cx.n + 1 ? t.fresh.replace("{p}", p) : t.gap.replace("{p}", cx.n + 1).replace("{n}", cx.n); };
+    // ---- the sentence table ----
+    const jpHtml = (txt, i) => { let n = 0;
+      return esc(txt).replace(KJ(), (m, k, rd) => { const id = n++; return `<button type="button" class="kj${rd ? "" : " none"}" data-i="${i}" data-n="${id}">${rd ? `<ruby>${k}<rt>${rd}</rt></ruby>` : k}</button>`; }); };
+    const nth = (txt, n) => { let c = 0, out = { k: "", rd: "" }; txt.replace(KJ(), (m, k, rd) => { if (c++ === n) out = { k, rd: rd || "" }; return m; }); return out; };
+    const setReading = (i, n, rd) => { let c = 0; rows[i].jp = rows[i].jp.replace(KJ(), (m, k) => c++ === n ? (rd ? k + "{" + rd + "}" : k) : m); };
+    const keditHtml = () => { const w = nth(rows[kedit.i].jp, kedit.n);
+      return `<div class="kedit"><b lang="ja">${esc(w.k)}</b><input id="kIn" lang="ja" value="${esc(w.rd)}" placeholder="${t.kPh}" autocomplete="off">
+        <button type="button" data-a="ksave">${t.kSave}</button><button type="button" data-a="kdel">${t.kDel}</button><button type="button" data-a="kcancel">${t.kCancel}</button></div>`; };
+    const render = () => {
+      const base = parseInt($("aNum").value, 10) || 1; let pg = -1; const out = [];
+      rows.forEach((r, i) => {
+        if (i === 0 || r.np) { pg++; out.push(`<h4 class="pgh">${t.pg} ${base + pg}</h4>`); }
+        out.push(`<div class="rw${r.flag ? " flag" : ""}" data-i="${i}">
+          <div class="rwh"><span class="rn">${i + 1}</span>
+            <label class="pa"><input type="checkbox" data-a="para" ${r.para ? "checked" : ""}> ${t.para}</label>
+            ${i ? `<button type="button" data-a="np" class="${r.np ? "on" : ""}" title="${t.newPage}">${t.newPageS}</button>` : ""}
+            ${r.flag ? `<span class="fl" title="${t.review}">⚠</span>` : ""}<span class="sp"></span>
+            ${i ? `<button type="button" data-a="mup" title="${t.mergeUp}">⤒</button>` : ""}<button type="button" data-a="add" title="${t.addBelow}">＋</button><button type="button" data-a="rm" title="${t.rm}">✕</button></div>
+          <div class="jpv" lang="ja">${jpHtml(r.jp, i) || "<i>—</i>"}</div>
+          ${kedit && kedit.i === i ? keditHtml() : ""}
+          <button type="button" class="lnk" data-a="jpedit">${r.edit ? t.doneTxt : t.editTxt}</button>
+          ${r.edit ? `<textarea data-f="jp" rows="2" lang="ja">${esc(r.jp)}</textarea>` : ""}
+          <div class="cells">${["en", "pl"].map(k => `<div class="cell"><span class="cl">${k.toUpperCase()}</span><textarea data-f="${k}" rows="2">${esc(r[k])}</textarea>
+            <span class="mv"><button type="button" data-a="mv" data-k="${k}" data-d="-1" ${i ? "" : "disabled"}>↑</button><button type="button" data-a="mv" data-k="${k}" data-d="1" ${i < rows.length - 1 ? "" : "disabled"}>↓</button></span></div>`).join("")}</div></div>`);
+      });
+      $("aRows").innerHTML = out.join("");
+      $("aWork").hidden = !rows.length; $("aSave").disabled = !rows.length;
+      $("aCount").textContent = `${rows.length} ${t.sent} · ${pg + 1} ${t.pages}`;
+    };
+    $("aRows").addEventListener("input", e => { const el = e.target, w = el.closest(".rw"), f = el.dataset.f; if (!w || !f) return;
+      rows[+w.dataset.i][f] = el.value; if (f !== "jp") { rows[+w.dataset.i].flag = false; w.classList.remove("flag"); } });
+    $("aRows").addEventListener("change", e => { const el = e.target, w = el.closest(".rw"); if (w && el.dataset.a === "para") rows[+w.dataset.i].para = el.checked; });
+    $("aRows").addEventListener("keydown", e => { if (e.target.id === "kIn" && e.key === "Enter") { e.preventDefault(); const b = view.querySelector('[data-a="ksave"]'); if (b) b.click(); } });
+    $("aRows").addEventListener("click", e => {
+      const kj = e.target.closest(".kj");
+      if (kj) { kedit = { i: +kj.dataset.i, n: +kj.dataset.n }; render(); const f = $("kIn"); if (f) { f.focus(); f.select(); } return; }
+      const b = e.target.closest("button[data-a]"); if (!b) return;
+      const a = b.dataset.a;
+      if (a === "ksave" || a === "kdel") { setReading(kedit.i, kedit.n, a === "kdel" ? "" : $("kIn").value.trim().replace(/[{}\s]/g, "")); kedit = null; return render(); }
+      if (a === "kcancel") { kedit = null; return render(); }
+      const w = b.closest(".rw"), i = +w.dataset.i, r = rows[i]; kedit = null;
+      if (a === "np") r.np = !r.np;
+      else if (a === "jpedit") r.edit = !r.edit;
+      else if (a === "add") rows.splice(i + 1, 0, { jp: "", en: "", pl: "", para: false, np: false, pi: r.pi });
+      else if (a === "rm") rows.splice(i, 1);
+      else if (a === "mup" && i) { const p = rows[i - 1]; p.jp += r.jp; p.en = [p.en, r.en].filter(Boolean).join(" "); p.pl = [p.pl, r.pl].filter(Boolean).join(" "); rows.splice(i, 1); }
+      else if (a === "mv") { const o = rows[i + +b.dataset.d], k = b.dataset.k; if (o) { [r[k], o[k]] = [o[k], r[k]]; r.flag = o.flag = false; } }
+      render();
+    });
+    // ---- paste -> sentences ----
+    $("aSplit").onclick = () => {
+      const raw = $("aJp").value; if (!raw.trim()) return st(t.empty);
+      rows = []; kedit = null; let pi = 0;
+      raw.split(/^[ \t]*-{3,}[ \t]*$/m).forEach((pg, k) => { const start = rows.length;
+        pg.split("\n").map(x => x.trim()).filter(Boolean).forEach(par => { splitJp(par).forEach((s, j) => rows.push({ jp: s, en: "", pl: "", para: j === 0, np: false, pi })); pi++; });
+        if (k && rows.length > start) rows[start].np = true; });
+      alignText(rows, parseTr($("aEn").value), "en"); alignText(rows, parseTr($("aPl").value), "pl");
+      st(""); render();
+    };
+    // ---- Claude helpers (furigana, matching translations) ----
+    const busy = async fn => {
+      const ids = ["aFuriAll", "aAlignAll", "aSplit", "aSave"]; ids.forEach(id => { $(id).disabled = true; }); st(t.working);
+      try { await fn(); } catch (err) { st(err && err.code === "not_granted" ? t.aiDenied : t.aiFail); }
+      ids.forEach(id => { $(id).disabled = false; }); $("aSave").disabled = !rows.length;
+    };
+    $("aFuriAll").onclick = () => busy(async () => {
+      const idx = rows.map((r, i) => i).filter(i => KJ().test(rows[i].jp)); let done = 0;
+      for (let c = 0; c < idx.length; c += 12) {
+        const part = idx.slice(c, c + 12), src = part.map(i => rows[i].jp);
+        const res = await sample.json("Add furigana to the Japanese sentences below. After every word that contains kanji, write its reading in hiragana in curly braces, in the form 漢字{かんじ}. Put only the kanji in front of the braces and leave okurigana and kana outside them, for example 見上げる -> 見上{みあ}げる and 食べる -> 食{た}べる. Choose the reading that fits the context. Keep any readings that are already there. Do not change, add or remove anything else. Reply with only a JSON array of " + src.length + " strings in the same order.\n\n" + JSON.stringify(src));
+        if (Array.isArray(res) && res.length === src.length) part.forEach((i, k) => { if (typeof res[k] === "string" && stripF(res[k]) === stripF(src[k])) { rows[i].jp = res[k]; done++; } });
+        st(`${t.working} ${Math.min(c + 12, idx.length)}/${idx.length}`);
+      }
+      render(); st(t.furiDone.replace("{n}", done));
+    });
+    $("aAlignAll").onclick = () => busy(async () => {
+      const keys = ["en", "pl"].filter(k => $(k === "en" ? "aEn" : "aPl").value.trim()); if (!keys.length) return st(t.noTr);
+      const n = rows.length, jp = rows.map(r => stripF(r.jp));
+      const res = await sample.json("Below are " + n + " Japanese sentences (a JSON array) and the whole translation of the text as plain text" + (keys.length > 1 ? " in English and in Polish" : "") + ". Match the translation to the sentences. Reply with only a JSON object with the keys " + keys.map(k => '"' + k + '"').join(" and ") + ", each an array of exactly " + n + " strings: item k is the part of that translation that corresponds to Japanese sentence k. Use the translation text exactly as given and only cut or join it at sentence boundaries; never rewrite, translate or invent. Use an empty string when a sentence has no counterpart. Keep every part of the translation.\n\nJAPANESE:\n" + JSON.stringify(jp) + keys.map(k => "\n\n" + (k === "en" ? "ENGLISH:\n" : "POLISH:\n") + $(k === "en" ? "aEn" : "aPl").value.trim()).join(""));
+      keys.forEach(k => { if (!res || !Array.isArray(res[k]) || res[k].length !== n) throw new Error("length"); });
+      keys.forEach(k => rows.forEach((r, i) => { r[k] = String(res[k][i] || "").trim(); r.flag = false; }));
+      render(); st(t.alignDone);
+    });
+    // ---- save / edit / list ----
     fillChap();
-    ["aJp", "aEn", "aPl"].forEach(id => $(id).oninput = count); count();
-    $("aNum").oninput = $("aChap").onchange = hint;
+    $("aNum").oninput = $("aChap").onchange = () => { hint(); if (rows.length) render(); };
     $("aBook").onchange = () => { fillChap(); hint(); };
-    let editId = null, rows = [];
-    const reset = () => { editId = null; $("admForm").reset(); fillChap(); $("aSave").textContent = t.save; $("aCancel").hidden = true; count(); hint(); };
+    const reset = () => { editId = null; rows = []; kedit = null; $("admForm").reset(); fillChap(); $("aWork").hidden = true; $("aSave").disabled = true; $("aSave").textContent = t.save; $("aCancel").hidden = true; hint(); };
     $("aCancel").onclick = reset;
     $("admForm").onsubmit = async e => {
       e.preventDefault();
-      const jp = split($("aJp").value), en = split($("aEn").value), pl = split($("aPl").value), st = $("aStatus"), first = parseInt($("aNum").value, 10);
-      if (!(first > 0)) { st.textContent = t.badnum; return; }
-      if (!jp.some(a => a.length)) { st.textContent = t.empty; return; }
-      const fits = o => !o.some(a => a.length) || (o.length === jp.length && o.every((a, i) => a.length === jp[i].length));
-      if (!fits(en) || !fits(pl)) { st.textContent = t.mismatch; return; }
+      const first = parseInt($("aNum").value, 10); if (!(first > 0)) return st(t.badnum);
+      const live = rows.filter(r => r.jp.trim()); if (!live.length) return st(t.empty);
+      const pages = []; live.forEach((r, i) => { if (!i || r.np) pages.push([]); pages[pages.length - 1].push(r); });
       const head = $("aHead").value.trim(), bookId = $("aBook").value, ci = $("aChapL").hidden ? null : +$("aChap").value, base = Date.now(), dn = /^\s*(\d+)/.exec(head);
-      const docs = jp.map((pg, k) => ({ bookId, ci, pos: first + k, head: k ? "" : head, side: dn && !k ? (+dn[1] % 2 ? "left" : "right") : "", order: base + k,
-        sentences: pg.map((j, i) => ({ jp: j, en: (en[k] || [])[i] || "", pl: (pl[k] || [])[i] || "", para: true })) }));
-      const btn = $("aSave"); btn.disabled = true; btn.textContent = t.saving; st.textContent = "";
+      const out = pages.map((rs, k) => ({ bookId, ci, pos: first + k, head: k ? "" : head, side: dn && !k ? (+dn[1] % 2 ? "left" : "right") : "", order: base + k,
+        sentences: rs.map((r, j) => ({ jp: r.jp.trim(), en: r.en.trim(), pl: r.pl.trim(), para: j === 0 || !!r.para })) }));
+      const btn = $("aSave"); btn.disabled = true; btn.textContent = t.saving; st("");
       try {
-        for (let k = 0; k < docs.length; k++) { if (k === 0 && editId) await col.doc(editId).set(docs[0]); else await col.add(docs[k]); }
-        reset(); st.textContent = t.saved;
-      } catch (err) { st.textContent = t.err; }
-      btn.disabled = false; btn.textContent = editId ? t.upd : t.save;
+        for (let k = 0; k < out.length; k++) { if (k === 0 && editId) await col.doc(editId).set(out[0]); else await col.add(out[k]); }
+        reset(); st(t.saved);
+      } catch (err) { st(t.err); btn.disabled = false; btn.textContent = editId ? t.upd : t.save; }
     };
     unsub = col.orderBy("order", "desc").limit(300).onSnapshot(snap => {
-      rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, z) => (a.bookId === z.bookId ? (a.pos || 0) - (z.pos || 0) || a.order - z.order : String(a.bookId).localeCompare(z.bookId)));
+      docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, z) => (a.bookId === z.bookId ? (a.pos || 0) - (z.pos || 0) || a.order - z.order : String(a.bookId).localeCompare(z.bookId)));
       const list = $("aList"); if (!list) return;
-      list.innerHTML = rows.length ? rows.map(r => { const b = BOOKS.find(x => x.id === r.bookId);
+      list.innerHTML = docs.length ? docs.map(r => { const b = BOOKS.find(x => x.id === r.bookId);
         return `<li><span class="badge">${esc(r.pos != null ? r.pos : "·")}</span><div><strong>${esc(b ? b.title : r.bookId)} · ${t.pg} ${esc(r.pos != null ? r.pos : "?")}</strong>
           <small>${r.sentences.length} ${t.lines}${r.head ? " · " + esc(r.head) : ""}</small></div><span><button class="del" data-edit="${esc(r.id)}">${t.edit}</button> <button class="del" data-del="${esc(r.id)}">${t.del}</button></span></li>`; }).join("")
         : `<li class="none">${t.none2}</li>`;
       list.querySelectorAll("[data-del]").forEach(b => b.onclick = () => col.doc(b.dataset.del).delete().catch(() => {}));
       list.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => {
-        const r = rows.find(x => x.id === b.dataset.edit); if (!r) return;
+        const r = docs.find(x => x.id === b.dataset.edit); if (!r) return;
         editId = r.id; $("aBook").value = r.bookId; fillChap(); if (r.ci != null) $("aChap").value = r.ci;
-        $("aNum").value = r.pos != null ? r.pos : ""; $("aHead").value = r.head || "";
-        $("aJp").value = r.sentences.map(x => x.jp).join("\n"); $("aEn").value = r.sentences.map(x => x.en).join("\n"); $("aPl").value = r.sentences.map(x => x.pl).join("\n");
-        $("aSave").textContent = t.upd; $("aCancel").hidden = false; count(); hint(); scrollTo(0, 0);
+        $("aNum").value = r.pos != null ? r.pos : ""; $("aHead").value = r.head || ""; $("aJp").value = $("aEn").value = $("aPl").value = "";
+        rows = r.sentences.map((x, j) => ({ jp: x.jp || "", en: x.en || "", pl: x.pl || "", para: j === 0 || !!x.para, np: false, pi: 0 })); kedit = null;
+        $("aSave").textContent = t.upd; $("aCancel").hidden = false; hint(); render(); scrollTo(0, 0);
       });
     }, () => {});
   }
