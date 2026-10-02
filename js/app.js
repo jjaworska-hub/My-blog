@@ -3,7 +3,7 @@
   const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
   let lang = store.get("lang") === "pl" ? "pl" : "en";
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const cover = b => b.cover ? `<img src="${esc(b.cover)}" alt="${esc(b.title)}">` : `<div style="height:100%;background:${esc(b.color)}"></div>`;
+  const cover = b => b.cover ? `<img src="${esc(b.cover)}" alt="${esc(b.title)}">` : `<div class="nocover" style="background:${esc(b.color)}"><span lang="ja">${esc(b.main || b.jp || b.title)}</span></div>`;
   const T = { en: { none: "No translations in this language yet.", back: "← Back", about: "About" },
               pl: { none: "Brak tłumaczeń w tym języku.", back: "← Wróć", about: "O projekcie" } };
 
@@ -46,7 +46,8 @@
     const t = D[lang];
     const chapters = b.chapters.filter(c => c.sentences || (c.text && c.text[lang]));
     const body = chapters.map((c, ci) => {
-      const title = `<h3>${esc(tr(c.title || {}))}</h3>`;
+      const ct = c.title || {};
+      const title = `<h3>${ct.jp ? `<span class="cjp" lang="ja">${esc(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span></h3>`;
       if (c.sentences) return title + `<p class="hint">${t.hint}</p><div class="spread">
         <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(c, ci, "jp")}</div>
         <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(c, ci, "tr")}</div></div>`;

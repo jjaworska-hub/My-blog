@@ -30,6 +30,8 @@ main{flex:1;max-width:1240px;width:100%;margin-inline:auto;animation:in .5s ease
 .book .meta{font-size:12px;color:var(--dim);margin-top:6px;letter-spacing:.04em}
 .book h3{font-size:18px;font-weight:400;margin:44px 0 12px;padding-top:20px;border-top:1px solid var(--line)}
 .book p.t{font-size:17px;line-height:1.8;margin-bottom:1em;max-width:62ch;color:#2a2a2a}
+.cjp{font-family:var(--mincho);margin-right:10px}
+.nocover{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--mincho);font-size:34px;letter-spacing:.12em;writing-mode:vertical-rl}
 .hint{font-size:13px;color:var(--dim);margin-bottom:14px}
 .spread{display:grid;grid-template-columns:1fr 1fr;background:#fbfaf6;border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.07);position:relative}
 .spread::after{content:"";position:absolute;inset:0 calc(50% - 22px);background:linear-gradient(90deg,transparent,rgba(0,0,0,.06) 50%,transparent);pointer-events:none}
