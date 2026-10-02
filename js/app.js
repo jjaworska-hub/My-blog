@@ -32,8 +32,8 @@
     else if (e.key === "ArrowRight") { e.preventDefault(); modalApi.step(1); }
   });
   const D = {
-    en: { page: "Page", pages: "Pages", prevPage: "Previous", nextPage: "Next", bmMark: "Bookmark here", bmClear: "Remove bookmark", resume: "Continue where you stopped", notes: "Notes", notesPh: "Write your notes about this book…", saved: "Saved", nosave: "Can’t save here: browser storage is unavailable.", local: "Notes are saved in this browser, on this device.", deck: "Download flashcards", deckSoon: "Coming soon", deckHint: "Vocabulary from this book", words: "Words", grammar: "Grammar", note: "Note", close: "Close", sentence: (n, N) => `Sentence ${n} of ${N}`, prev: "Previous sentence", next: "Next sentence", furi: "Furigana", hint: "Laid out like a Japanese book: start on the right page and turn pages to the left. Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
-    pl: { page: "Strona", pages: "Strony", prevPage: "Poprzednia", nextPage: "Następna", bmMark: "Zakładka tutaj", bmClear: "Usuń zakładkę", resume: "Wróć do zakładki", notes: "Notatki", notesPh: "Zapisz tu notatki o tej książce…", saved: "Zapisano", nosave: "Nie można zapisać: pamięć przeglądarki jest niedostępna.", local: "Notatki zapisują się w tej przeglądarce, na tym urządzeniu.", deck: "Pobierz fiszki", deckSoon: "Wkrótce", deckHint: "Słownictwo z tej książki", sentence: (n, N) => `Zdanie ${n} z ${N}`, prev: "Poprzednie zdanie", next: "Następne zdanie", furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Układ jak w japońskiej książce: zacznij od prawej strony i przewracaj strony w lewo. Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
+    en: { page: "Page", pages: "Pages", goto: "Go to page", go: "Go", prevPage: "Previous", nextPage: "Next", bmMark: "Bookmark here", bmClear: "Remove bookmark", resume: "Continue where you stopped", notes: "Notes", notesPh: "Write your notes about this book…", saved: "Saved", nosave: "Can’t save here: browser storage is unavailable.", local: "Notes are saved in this browser, on this device.", deck: "Download flashcards", deckSoon: "Coming soon", deckHint: "Vocabulary from this book", words: "Words", grammar: "Grammar", note: "Note", close: "Close", sentence: (n, N) => `Sentence ${n} of ${N}`, prev: "Previous sentence", next: "Next sentence", furi: "Furigana", hint: "Laid out like a Japanese book: start on the right page and turn pages to the left. Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
+    pl: { page: "Strona", pages: "Strony", goto: "Idź do strony", go: "Idź", prevPage: "Poprzednia", nextPage: "Następna", bmMark: "Zakładka tutaj", bmClear: "Usuń zakładkę", resume: "Wróć do zakładki", notes: "Notatki", notesPh: "Zapisz tu notatki o tej książce…", saved: "Zapisano", nosave: "Nie można zapisać: pamięć przeglądarki jest niedostępna.", local: "Notatki zapisują się w tej przeglądarce, na tym urządzeniu.", deck: "Pobierz fiszki", deckSoon: "Wkrótce", deckHint: "Słownictwo z tej książki", sentence: (n, N) => `Zdanie ${n} z ${N}`, prev: "Poprzednie zdanie", next: "Następne zdanie", furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Układ jak w japońskiej książce: zacznij od prawej strony i przewracaj strony w lewo. Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
   };
   // 漢字{かんじ} -> <ruby>漢字<rt>かんじ</rt></ruby> (input is escaped first)
   const ruby = str => esc(str).replace(/([\u4e00-\u9fff\u3005\u3006\u30f6]+)\{([^}]+)\}/g, "<ruby>$1<rt>$2</rt></ruby>");
@@ -113,7 +113,10 @@
     // and the arrows never move when you turn the page.
     let built = false;
     function buildReader() {
-      const pager = spreads.length > 1 ? `<nav class="pager" aria-label="${t.pages}"><span class="pgnums">${spreads.map((_, k) => `<button type="button" class="pgn" data-pg="${k}" aria-label="${t.page} ${k + 1}">${k + 1}</button>`).join("")}</span></nav>` : "";
+      const pager = spreads.length > 1 ? `<nav class="pager" aria-label="${t.pages}"><span class="pgnums">${spreads.map((_, k) => `<button type="button" class="pgn" data-pg="${k}" aria-label="${t.page} ${k + 1}">${k + 1}</button>`).join("")}</span>
+        <form class="gotopage" id="gotoForm" autocomplete="off"><label for="gotoInput">${t.goto}</label>
+          <input id="gotoInput" type="number" inputmode="numeric" step="1" placeholder="1–${spreads.length}" required>
+          <button type="submit">${t.go}</button></form></nav>` : "";
       const titleOf = (sp, si) => { const ct = sp.c.title || {};
         return `<span class="rt" data-si="${si}">${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span>${spreads.length > 1 ? ` <small class="chpage">${t.page} ${si + 1} / ${spreads.length}</small>` : ""}</span>`; };
       rdr.innerHTML = `<h3 id="rtitle">${spreads.map(titleOf).join("")}</h3>
@@ -262,6 +265,14 @@
         view.querySelectorAll(".furitoggle").forEach(x => { x.setAttribute("aria-pressed", furi); x.textContent = `${t.furi}: ${furi ? "ON" : "OFF"}`; });
       }
     };
+    view.onsubmit = e => {
+      if (!e.target.closest || !e.target.closest("#gotoForm")) return;
+      e.preventDefault();
+      const input = $("gotoInput"), n = parseInt(input.value, 10);
+      if (Number.isNaN(n)) return;
+      goPage(Math.max(1, Math.min(spreads.length, n)) - 1);
+      input.value = ""; input.focus({ preventScroll: true });
+    };
     view.onkeydown = e => { if ((e.key === "Enter" || e.key === " ") && keyOf(e)) { e.preventDefault(); openModal(keyOf(e)); } };
 
     renderPage(pageMemo.id === b.id ? pageMemo.n : 0);
@@ -355,7 +366,7 @@
   function route() {
     if (unsub) { unsub(); unsub = null; }
     document.body.classList.remove("modal-open"); modalApi = null; pageApi = null;
-    view.onmouseover = view.onmouseout = view.onfocusin = view.onfocusout = view.onclick = view.onkeydown = null;
+    view.onmouseover = view.onmouseout = view.onfocusin = view.onfocusout = view.onclick = view.onkeydown = view.onsubmit = null;
     const h = cur;
     const page = h.startsWith("book/") ? cat(BOOKS.find(x => x.id === h.slice(5)) || {}) : (NAV.en[h] ? h : "books");
     document.querySelectorAll("[data-nav]").forEach(a => { a.classList.toggle("on", a.dataset.nav === page); a.textContent = NAV[lang][a.dataset.nav]; });

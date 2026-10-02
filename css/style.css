@@ -225,3 +225,14 @@ a.deck:hover span{color:#ddd}
 #rdr>h3>.rt.cur{visibility:visible}
 /* taller book: every page at least this tall (side by side layout only) */
 @media(min-width:821px){.stack>.spread{min-height:780px}}
+
+/* go to page */
+.pager{flex-direction:column;gap:18px}
+.gotopage{direction:ltr;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+.gotopage label{font-size:13px;color:var(--dim)}
+.gotopage input{width:84px;font:inherit;font-size:15px;color:var(--fg);background:transparent;border:0;border-bottom:1px solid #bbb;border-radius:0;padding:6px 2px;text-align:center;-moz-appearance:textfield}
+.gotopage input::-webkit-outer-spin-button,.gotopage input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.gotopage input:focus{outline:0;border-color:var(--fg)}
+.gotopage button{font:inherit;font-size:13px;color:#fff;background:var(--fg);border:1px solid var(--fg);padding:6px 16px;cursor:pointer;transition:opacity .2s}
+.gotopage button:hover{opacity:.82}
+.gotopage button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
