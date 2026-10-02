@@ -85,6 +85,7 @@
       <h1>${esc(b.title)}</h1>${b.jp ? `<p class="jp">${esc(b.jp)}</p>` : ""}
       <p class="meta">${[b.author, b.year].filter(Boolean).map(esc).join("  ·  ")}</p>
       <div class="bactions"><button type="button" class="resume" id="resumeBtn" hidden></button></div></div></header>
+      ${spreads.length > 1 ? `<button type="button" class="pgside pgnext" aria-label="${t.nextPage}"><span>‹</span></button><button type="button" class="pgside pgprev" aria-label="${t.prevPage}"><span>›</span></button>` : ""}
       <div id="rdr"></div>${plainHTML}${!spreads.length && !plain.length ? `<p class="empty">${T[lang].none}</p>` : ""}
       <div class="bfoot"><div class="deckrow">
         ${b.flashcards ? `<a class="deck" href="${esc(b.flashcards)}" download><b>${t.deck}</b><span>${t.deckHint}</span></a>`
@@ -114,14 +115,15 @@
       page = Math.max(0, Math.min(spreads.length - 1, n)); pageMemo = { id: b.id, n: page };
       const sp = spreads[page], ct = sp.c.title || {};
       const pager = spreads.length > 1 ? `<nav class="pager" aria-label="${t.pages}">
-        <button type="button" class="pgprev" ${page === 0 ? "disabled" : ""}><span>${t.prevPage}</span> ›</button>
-        <span class="pgnums">${spreads.map((_, k) => `<button type="button" class="pgn${k === page ? " on" : ""}" data-pg="${k}" aria-label="${t.page} ${k + 1}"${k === page ? ' aria-current="page"' : ""}>${k + 1}</button>`).join("")}</span>
-        <button type="button" class="pgnext" ${page === spreads.length - 1 ? "disabled" : ""}>‹ <span>${t.nextPage}</span></button></nav>` : "";
+        <span class="pgnums">${spreads.map((_, k) => `<button type="button" class="pgn${k === page ? " on" : ""}" data-pg="${k}" aria-label="${t.page} ${k + 1}"${k === page ? ' aria-current="page"' : ""}>${k + 1}</button>`).join("")}</span></nav>` : "";
       rdr.innerHTML = `<h3>${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span>${spreads.length > 1 ? ` <small class="chpage">${t.page} ${page + 1} / ${spreads.length}</small>` : ""}</h3>
         <div class="tools"><p class="hint">${t.hint}</p><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></div>
         <div class="spread${dir ? " turn-" + dir : ""}">
           <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(sp.list, "jp")}</div>
           <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(sp.list, "tr")}</div></div>${pager}`;
+      const pv = view.querySelector(".pgprev"), nx = view.querySelector(".pgnext");
+      if (pv) pv.disabled = page === 0;
+      if (nx) nx.disabled = page === spreads.length - 1;
       applyMarks();
     }
     const goPage = (n, scroll) => {
