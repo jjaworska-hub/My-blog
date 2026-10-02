@@ -7,7 +7,7 @@
   const T = { en: { none: "No translations in this language yet.", back: "← Back", about: "About" },
               pl: { none: "Brak tłumaczeń w tym języku.", back: "← Wróć", about: "O projekcie" } };
 
-  const NAV = { en: { books: "Books", manga: "Manga", other: "Other", requests: "Requests", learn: "Learn Japanese", about: "About" }, pl: { books: "Książki", manga: "Manga", other: "Inne", requests: "Prośby", learn: "Nauka japońskiego", about: "O projekcie" } };
+  const NAV = { en: { books: "Books", manga: "Manga", other: "Other", requests: "Requests", learn: "Learn Japanese", about: "About", admin: "Admin" }, pl: { books: "Książki", manga: "Manga", other: "Inne", requests: "Prośby", learn: "Nauka japońskiego", about: "O projekcie", admin: "Admin" } };
   const EMPTY = { en: "Nothing here yet.", pl: "Na razie nic tu nie ma." };
   const cat = b => b.category || "books";
   function grid(c) {
@@ -17,6 +17,12 @@
       <a class="card" href="#/book/${esc(b.id)}"><div class="img">${cover(b)}</div>
       <h2>${esc(b.title)}</h2>${b.jp ? `<p>${esc(b.jp)}</p>` : ""}</a>`).join("")}</div>`;
   }
+  const ICON_CARDS = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="14" height="13" rx="2.2"/><path d="M7 4h11.5A2.5 2.5 0 0 1 21 6.5V16"/><path d="M7 12h6M7 15.5h4"/></svg>';
+  const ICON_DL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 11 12 15.5 16.5 11"/><path d="M5 20h14"/></svg>';
+  const wordsLabel = (n) => lang === "pl" ? (n === 1 ? "słowo" : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? "słowa" : "słów") : (n === 1 ? "word" : "words");
+  // Where the page runs inside Claude, files are saved through the `downloads` capability (viewer confirms).
+  let dl = null;
+  if (typeof claude !== "undefined" && claude.use) claude.use("downloads").then(v => { dl = v; }).catch(() => {});
   let modalApi = null, pageApi = null, pageMemo = { id: null, n: 0 }; // last page per visit, so switching language keeps your place
   document.addEventListener("keydown", e => {
     if (pageApi && !(modalApi && document.body.classList.contains("modal-open"))) {
@@ -32,17 +38,27 @@
     else if (e.key === "ArrowRight") { e.preventDefault(); modalApi.step(1); }
   });
   const D = {
-    en: { page: "Page", pages: "Pages", goto: "Go to page", go: "Go", prevPage: "Previous", nextPage: "Next", bmMark: "Bookmark here", bmClear: "Remove bookmark", resume: "Continue where you stopped", notes: "Notes", notesPh: "Write your notes about this book…", saved: "Saved", nosave: "Can’t save here: browser storage is unavailable.", local: "Notes are saved in this browser, on this device.", deck: "Download flashcards", deckSoon: "Coming soon", deckHint: "Vocabulary from this book", words: "Words", grammar: "Grammar", note: "Note", close: "Close", sentence: (n, N) => `Sentence ${n} of ${N}`, prev: "Previous sentence", next: "Next sentence", furi: "Furigana", hint: "Laid out like a Japanese book: start on the right page and turn pages to the left. Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
-    pl: { page: "Strona", pages: "Strony", goto: "Idź do strony", go: "Idź", prevPage: "Poprzednia", nextPage: "Następna", bmMark: "Zakładka tutaj", bmClear: "Usuń zakładkę", resume: "Wróć do zakładki", notes: "Notatki", notesPh: "Zapisz tu notatki o tej książce…", saved: "Zapisano", nosave: "Nie można zapisać: pamięć przeglądarki jest niedostępna.", local: "Notatki zapisują się w tej przeglądarce, na tym urządzeniu.", deck: "Pobierz fiszki", deckSoon: "Wkrótce", deckHint: "Słownictwo z tej książki", sentence: (n, N) => `Zdanie ${n} z ${N}`, prev: "Poprzednie zdanie", next: "Następne zdanie", furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Układ jak w japońskiej książce: zacznij od prawej strony i przewracaj strony w lewo. Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
+    en: { page: "Page", pages: "Pages", tate: "Vertical text", goto: "Go to page", go: "Go", prevPage: "Previous", nextPage: "Next", bmMark: "Bookmark here", bmClear: "Remove bookmark", resume: "Continue where you stopped", notes: "Notes", notesPh: "Write your notes about this book…", saved: "Saved", nosave: "Can’t save here: browser storage is unavailable.", local: "Notes are saved in this browser, on this device.", deck: "Download flashcards", deckSoon: "Coming soon", deckSaved: "Saved. In Anki: File → Import.", deckFail: "Could not save the file.", deckHint: "Vocabulary from this book", words: "Words", grammar: "Grammar", note: "Note", close: "Close", sentence: (n, N) => `Sentence ${n} of ${N}`, prev: "Previous sentence", next: "Next sentence", furi: "Furigana", hint: "Laid out like a Japanese book: start on the right page and turn pages to the left. Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
+    pl: { page: "Strona", pages: "Strony", tate: "Pismo pionowe", goto: "Idź do strony", go: "Idź", prevPage: "Poprzednia", nextPage: "Następna", bmMark: "Zakładka tutaj", bmClear: "Usuń zakładkę", resume: "Wróć do zakładki", notes: "Notatki", notesPh: "Zapisz tu notatki o tej książce…", saved: "Zapisano", nosave: "Nie można zapisać: pamięć przeglądarki jest niedostępna.", local: "Notatki zapisują się w tej przeglądarce, na tym urządzeniu.", deck: "Pobierz fiszki", deckSoon: "Wkrótce", deckSaved: "Zapisano. W Anki: Plik → Importuj.", deckFail: "Nie udało się zapisać pliku.", deckHint: "Słownictwo z tej książki", sentence: (n, N) => `Zdanie ${n} z ${N}`, prev: "Poprzednie zdanie", next: "Następne zdanie", furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Układ jak w japońskiej książce: zacznij od prawej strony i przewracaj strony w lewo. Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
   };
   // 漢字{かんじ} -> <ruby>漢字<rt>かんじ</rt></ruby> (input is escaped first)
-  const ruby = str => esc(str).replace(/([\u4e00-\u9fff\u3005\u3006\u30f6]+)\{([^}]+)\}/g, "<ruby>$1<rt>$2</rt></ruby>");
+  const ruby = str => esc(str).replace(/([\u4e00-\u9fff\u3005\u3006\u30f6]+)\{([^}]+)\}/g, "<ruby>$1<rt>$2</rt></ruby>").replace(/\n/g, "<br>").replace(/^(.*?)\t(.*)$/s, '<span class="tabl">$1</span><span class="tabnum">$2</span>');
   let furi = store.get("furi") !== "off";
+  let tate = store.get("tate") !== "off"; // vertical Japanese text, as in the printed book
   const tr = (s) => s[lang] || s.en || "";
+  // Paragraph look follows the first sentence: style hints (head, title, epi, poem, mark, toc, cont)
+  // or, by default, a one-character indent unless the paragraph opens with a quotation.
+  function paraClass(first) {
+    const st = String(first.style || "").split(/\s+/).filter(Boolean);
+    const cls = st.map(x => "st-" + x);
+    const styled = st.some(x => ["head", "title", "epi", "poem", "mark", "toc"].includes(x));
+    if (!styled && !st.includes("cont") && !first.jp.startsWith("「")) cls.push("ind");
+    return cls.join(" ");
+  }
   function sentencesHTML(list, side) {
-    let out = "<p>";
+    let out = "";
     list.forEach(({ s, key }, i) => {
-      if (i && s.para) out += "</p><p>";
+      if (i === 0 || s.para) out += `${i ? "</p>" : ""}<p class="${paraClass(s)}">`;
       const txt = side === "jp" ? ruby(s.jp) : esc(tr(s));
       out += `<span class="sent" tabindex="0" role="button" data-s="${key}">${txt}</span>${side === "jp" ? "" : " "}`;
     });
@@ -64,15 +80,37 @@
       ${s.note ? `<section class="dnote"><h4>${t.note}</h4><p>${m(s.note)}</p></section>` : ""}
       </div></div>`;
   }
+  // pages added from the admin panel (db collection "pages") are appended to the last chapter
+  let extraPages = {};
+  function withExtra(b) {
+    const ex = b && extraPages[b.id]; if (!ex || !ex.length) return b;
+    const chapters = b.chapters.map(c => ({ ...c }));
+    chapters.forEach(c => { if (!c.pages && c.sentences) { c.pages = [c.sentences]; delete c.sentences; } if (c.pages) c.pages = c.pages.slice(); });
+    let last = -1; chapters.forEach((c, ci) => { if (c.pages) last = ci; });
+    if (last < 0) return b;
+    // pos = the page number shown by the pager ("Page 8 / 8"): text is appended to that page, or a new page is added at the end
+    [...ex].sort((a, z) => (a.pos ?? 1e9) - (z.pos ?? 1e9)).forEach(x => {
+      const ci = x.ci != null && chapters[x.ci] && chapters[x.ci].pages ? x.ci : last, pgs = chapters[ci].pages;
+      const i = x.pos >= 1 ? x.pos - 1 : pgs.length;
+      if (i < pgs.length) {
+        const pg = pgs[i], base = Array.isArray(pg) ? { sentences: pg } : pg;
+        pgs[i] = { ...base, ...(base.head || !x.page.head ? {} : { head: x.page.head }), ...(base.side || !x.page.side ? {} : { side: x.page.side }), sentences: [...base.sentences, ...x.page.sentences] };
+      } else pgs.push(x.page);
+    });
+    return { ...b, chapters };
+  }
   function book(id) {
-    const b = BOOKS.find(x => x.id === id); if (!b) return grid("books");
+    const b = withExtra(BOOKS.find(x => x.id === id)); if (!b) return grid("books");
     const t = D[lang];
     // every bilingual page of the book, in reading order; plain-text chapters are shown below
     const spreads = [], plain = [];
     b.chapters.forEach((c, ci) => {
       if (c.sentences || c.pages) {
         const pgs = c.pages || [c.sentences];
-        pgs.forEach((sents, pi) => spreads.push({ c, ci, pi, n: pgs.length, list: sents.map((s, i) => ({ s, key: `${ci}-${pi}-${i}` })) }));
+        pgs.forEach((pg, pi) => {
+          const meta = Array.isArray(pg) ? {} : pg, sents = Array.isArray(pg) ? pg : pg.sentences;
+          spreads.push({ c, ci, pi, n: pgs.length, meta, list: sents.map((s, i) => ({ s, key: `${ci}-${pi}-${i}` })) });
+        });
       } else if (c.text && c.text[lang]) plain.push(c);
     });
     const loc = {}; spreads.forEach((sp, si) => sp.list.forEach((x, i) => { loc[x.key] = { si, s: x.s }; }));
@@ -81,14 +119,15 @@
       return `<h3>${esc(tr(ct))}</h3>` + c.text[lang].split(/\n\s*\n/).map(p => `<p class="t">${esc(p)}</p>`).join(""); }).join("");
 
     view.innerHTML = `<a class="back" href="#/${cat(b)}">${T[lang].back}</a>
-      <article class="book${furi ? "" : " nofuri"}"><header class="bhead"><div class="img">${cover(b)}</div><div>
+      <article class="book${furi ? "" : " nofuri"}${tate ? "" : " yoko"}"><header class="bhead"><div class="img">${cover(b)}</div><div>
       <h1>${esc(b.title)}</h1>${b.jp ? `<p class="jp">${esc(b.jp)}</p>` : ""}
       <p class="meta">${[b.author, b.year].filter(Boolean).map(esc).join("  ·  ")}</p>
       <div class="bactions"><button type="button" class="resume" id="resumeBtn" hidden></button></div></div></header>
       <div id="rdr"></div>${plainHTML}${!spreads.length && !plain.length ? `<p class="empty">${T[lang].none}</p>` : ""}
       <div class="bfoot"><div class="deckrow">
-        ${b.flashcards ? `<a class="deck" href="${esc(b.flashcards)}" download><b>${t.deck}</b><span>${t.deckHint}</span></a>`
-          : `<button type="button" class="deck off" disabled aria-disabled="true"><b>${t.deck}</b><span>${t.deckHint} · ${t.deckSoon}</span></button>`}
+        ${b.flashcards
+          ? `<a class="deck" href="${esc(b.flashcards)}" download id="deckLink"><span class="deckicon">${ICON_CARDS}</span><span class="decktext"><b>${t.deck}</b><span class="decksub">${t.deckHint}</span><span class="deckchips">${b.flashcardsCount ? `<i class="chip accent">${b.flashcardsCount} ${wordsLabel(b.flashcardsCount)}</i>` : ""}<i class="chip">Anki</i></span></span><span class="deckgo">${ICON_DL}</span></a><span class="deckstat" id="deckStat" role="status"></span>`
+          : `<button type="button" class="deck off" disabled aria-disabled="true"><span class="deckicon">${ICON_CARDS}</span><span class="decktext"><b>${t.deck}</b><span class="decksub">${t.deckHint}</span><span class="deckchips"><i class="chip">${t.deckSoon}</i></span></span></button>`}
       </div></div>
       <button type="button" class="notesfab" id="notesBtn" aria-expanded="false" aria-controls="notes"><span>${t.notes}</span><i class="ndot" hidden></i></button>
       <aside class="notes" id="notes" aria-label="${t.notes}">
@@ -120,10 +159,10 @@
       const titleOf = (sp, si) => { const ct = sp.c.title || {};
         return `<span class="rt" data-si="${si}">${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span>${spreads.length > 1 ? ` <small class="chpage">${t.page} ${si + 1} / ${spreads.length}</small>` : ""}</span>`; };
       rdr.innerHTML = `<h3 id="rtitle">${spreads.map(titleOf).join("")}</h3>
-        <div class="tools"><p class="hint">${t.hint}</p><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></div>
+        <div class="tools"><p class="hint">${t.hint}</p><span class="toolbtns"><button type="button" class="tatetoggle" aria-pressed="${tate}">${t.tate}: ${tate ? "ON" : "OFF"}</button><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></span></div>
         <div class="stage">${spreads.length > 1 ? `<button type="button" class="pgside pgnext" aria-label="${t.nextPage}"><span>‹</span></button><button type="button" class="pgside pgprev" aria-label="${t.prevPage}"><span>›</span></button>` : ""}
         <div class="stack">${spreads.map((sp, si) => `<div class="spread" data-si="${si}">
-          <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(sp.list, "jp")}</div>
+          <div class="page jp ${sp.meta.kind ? "k-" + sp.meta.kind : ""}" lang="ja"><span class="plabel">${t.jpLabel}</span>${sp.meta.head ? `<div class="runhead ${sp.meta.side === "right" ? "r" : "l"}">${esc(sp.meta.head)}</div>` : ""}<div class="vt">${sentencesHTML(sp.list, "jp")}</div></div>
           <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(sp.list, "tr")}</div></div>`).join("")}</div></div>${pager}`;
       built = true;
     }
@@ -259,6 +298,19 @@
       else if (el.closest(".pgn")) goPage(+el.closest(".pgn").dataset.pg);
       else if (el.closest(".pgprev")) goPage(page - 1);
       else if (el.closest(".pgnext")) goPage(page + 1);
+      else if (el.closest("#deckLink") && dl && b.flashcardsText) {
+        e.preventDefault();
+        const stat = $("deckStat"); stat.textContent = "…";
+        fetch(b.flashcardsText).then(r => { if (!r.ok) throw new Error("fetch"); return r.text(); })
+          .then(text => dl.save({ filename: b.flashcardsText.split("/").pop(), data: text }))
+          .then(() => { stat.textContent = t.deckSaved; })
+          .catch(err => { stat.textContent = err && err.code === "declined" ? "" : t.deckFail; });
+      }
+      else if (el.closest(".tatetoggle")) {
+        tate = !tate; store.set("tate", tate ? "on" : "off");
+        view.querySelector(".book").classList.toggle("yoko", !tate);
+        view.querySelectorAll(".tatetoggle").forEach(x => { x.setAttribute("aria-pressed", tate); x.textContent = `${t.tate}: ${tate ? "ON" : "OFF"}`; });
+      }
       else if (el.closest(".furitoggle")) {
         furi = !furi; store.set("furi", furi ? "on" : "off");
         view.querySelector(".book").classList.toggle("nofuri", !furi);
@@ -301,7 +353,7 @@
     const t = R[lang], [db, user] = await claudeReady;
     if (cur !== "requests") return;
     const canWrite = !!db && !(user && (await user.can("data.write")) === false);
-    const isOwner = !!(user && user.isOwner && user.isOwner());
+    const isOwner = !!(user && await user.isOwner());
     view.innerHTML = `<section class="req"><h1>${t.h}</h1><p class="lead">${t.intro}</p>
       ${!db ? `<p class="empty">${t.off}</p>` : `
       <form id="reqForm" ${canWrite ? "" : "hidden"}>
@@ -335,6 +387,109 @@
     }, () => { listEl.innerHTML = `<li class="none">${t.off}</li>`; });
   }
   const $ = id => document.getElementById(id);
+
+  // ---- Admin panel (owner only; needs the db capability, so it exists in the Claude preview) ----
+  const A = {
+    en: { h: "Admin panel", lead: "Type the page number (as the pager shows it, e.g. 8 for “Page 8”), paste the text and save. One line is one sentence; the three boxes must match line for line. A line with --- continues on the next page. Furigana: 漢字{かんじ}.",
+          book: "Book", chap: "Chapter", num: "Page number", run: "Running head (optional, used when the page is new)", runHint: "e.g. 11　第一話　鎌鼬",
+          jp: "Original (Japanese)", en: "English", pl: "Polish", save: "Add to page", saving: "Saving…", saved: "Added.", upd: "Update", cancel: "Cancel editing",
+          mismatch: "The boxes do not match: pages or lines differ", empty: "Add at least one line of Japanese text.", err: "Saving failed. Try again.", badnum: "Enter a page number.",
+          list: "Text added here", none2: "Nothing added yet.", edit: "Edit", del: "Delete", denied: "This panel is available only to the site owner, in the Claude preview.",
+          lines: "lines", pages: "pages", pg: "Page", has: "This book has {n} pages. Page {p} exists: the text will be added at its end.",
+          fresh: "A new page {p} will be added at the end.", gap: "A new page will be added at the end, as page {p}, because pages up to {n} exist so far." },
+    pl: { h: "Panel administratora", lead: "Wpisz numer strony (taki, jaki pokazuje paginacja, np. 8 dla „Page 8”), wklej tekst i zapisz. Jedna linia to jedno zdanie; trzy pola muszą zgadzać się linia w linię. Linia z --- ciągnie tekst na następną stronę. Furigana: 漢字{かんじ}.",
+          book: "Książka", chap: "Rozdział", num: "Numer strony", run: "Nagłówek bieżący (opcjonalnie, używany dla nowej strony)", runHint: "np. 11　第一話　鎌鼬",
+          jp: "Oryginał (japoński)", en: "Angielski", pl: "Polski", save: "Dodaj na stronę", saving: "Zapisywanie…", saved: "Dodano.", upd: "Zaktualizuj", cancel: "Anuluj edycję",
+          mismatch: "Pola się nie zgadzają: różna liczba stron lub linii", empty: "Dodaj przynajmniej jedną linię tekstu japońskiego.", err: "Nie udało się zapisać. Spróbuj ponownie.", badnum: "Wpisz numer strony.",
+          list: "Tekst dodany tutaj", none2: "Nic jeszcze nie dodano.", edit: "Edytuj", del: "Usuń", denied: "Ten panel jest dostępny tylko dla właściciela strony, w podglądzie w Claude.",
+          lines: "linii", pages: "stron", pg: "Strona", has: "Ta książka ma {n} stron. Strona {p} istnieje: tekst zostanie dopisany na jej końcu.",
+          fresh: "Zostanie dodana nowa strona {p} na końcu.", gap: "Zostanie dodana nowa strona na końcu, jako strona {p}, bo na razie istnieją strony do {n}." }
+  };
+  async function admin() {
+    const t = A[lang], [db, user] = await claudeReady;
+    if (cur !== "admin") return;
+    const owner = !!(db && user && await user.isOwner());
+    if (!owner) { view.innerHTML = `<section class="req"><h1>${t.h}</h1><p class="empty">${t.denied}</p></section>`; return; }
+    const col = db.collection("pages");
+    view.innerHTML = `<section class="req adm"><h1>${t.h}</h1><p class="lead">${t.lead}</p>
+      <form id="admForm">
+        <div class="row"><label>${t.book}<select id="aBook">${BOOKS.map(b => `<option value="${esc(b.id)}">${esc(b.title)}</option>`).join("")}</select></label>
+        <label>${t.num}<input id="aNum" type="number" min="1" step="1" required></label></div>
+        <label id="aChapL" hidden>${t.chap}<select id="aChap"></select></label>
+        <p class="hint" id="aHint"></p>
+        <label>${t.run}<input id="aHead" maxlength="80" placeholder="${t.runHint}" lang="ja"></label>
+        <label>${t.jp} <i id="cJp"></i><textarea id="aJp" rows="10" lang="ja" required></textarea></label>
+        <label>${t.en} <i id="cEn"></i><textarea id="aEn" rows="8"></textarea></label>
+        <label>${t.pl} <i id="cPl"></i><textarea id="aPl" rows="8"></textarea></label>
+        <div class="actions"><button type="submit" id="aSave">${t.save}</button><button type="button" id="aCancel" hidden>${t.cancel}</button><span class="status" id="aStatus" role="status"></span></div>
+      </form>
+      <h2>${t.list}</h2><ul class="reqlist" id="aList"></ul></section>`;
+    // a line "---" starts the next page; pages are lists of non-empty lines
+    const split = v => v.split("\n").reduce((acc, l) => { const x = l.trim(); if (/^-{3,}$/.test(x)) acc.push([]); else if (x) acc[acc.length - 1].push(x); return acc; }, [[]]);
+    const count = () => { [["Jp", "aJp"], ["En", "aEn"], ["Pl", "aPl"]].forEach(([k, id]) => { const pg = split($(id).value);
+      $("c" + k).textContent = `(${pg.length} ${t.pages}, ${pg.reduce((n, a) => n + a.length, 0)} ${t.lines})`; }); };
+    const chapters = () => { const b = BOOKS.find(x => x.id === $("aBook").value); const out = [];
+      (b ? b.chapters : []).forEach((c, ci) => { const pgs = c.pages || (c.sentences ? [c.sentences] : null); if (pgs) out.push({ ci, c, n: pgs.length }); }); return out; };
+    const fillChap = () => { const cs = chapters(); $("aChap").innerHTML = cs.map(x => `<option value="${x.ci}">${esc(x.c.title ? (x.c.title[lang] || x.c.title.en || "").replace(/\{[^}]*\}/g, "") : "#" + (x.ci + 1))} (${x.n})</option>`).join("");
+      $("aChapL").hidden = cs.length < 2; };
+    const hint = () => { const cs = chapters(), cx = cs.find(x => String(x.ci) === $("aChap").value) || cs[cs.length - 1], p = parseInt($("aNum").value, 10), h = $("aHint");
+      if (!cx || !(p > 0)) { h.textContent = ""; return; }
+      h.textContent = p <= cx.n ? t.has.replace("{n}", cx.n).replace("{p}", p) : p === cx.n + 1 ? t.fresh.replace("{p}", p) : t.gap.replace("{p}", cx.n + 1).replace("{n}", cx.n); };
+    fillChap();
+    ["aJp", "aEn", "aPl"].forEach(id => $(id).oninput = count); count();
+    $("aNum").oninput = $("aChap").onchange = hint;
+    $("aBook").onchange = () => { fillChap(); hint(); };
+    let editId = null, rows = [];
+    const reset = () => { editId = null; $("admForm").reset(); fillChap(); $("aSave").textContent = t.save; $("aCancel").hidden = true; count(); hint(); };
+    $("aCancel").onclick = reset;
+    $("admForm").onsubmit = async e => {
+      e.preventDefault();
+      const jp = split($("aJp").value), en = split($("aEn").value), pl = split($("aPl").value), st = $("aStatus"), first = parseInt($("aNum").value, 10);
+      if (!(first > 0)) { st.textContent = t.badnum; return; }
+      if (!jp.some(a => a.length)) { st.textContent = t.empty; return; }
+      const fits = o => !o.some(a => a.length) || (o.length === jp.length && o.every((a, i) => a.length === jp[i].length));
+      if (!fits(en) || !fits(pl)) { st.textContent = t.mismatch; return; }
+      const head = $("aHead").value.trim(), bookId = $("aBook").value, ci = $("aChapL").hidden ? null : +$("aChap").value, base = Date.now(), dn = /^\s*(\d+)/.exec(head);
+      const docs = jp.map((pg, k) => ({ bookId, ci, pos: first + k, head: k ? "" : head, side: dn && !k ? (+dn[1] % 2 ? "left" : "right") : "", order: base + k,
+        sentences: pg.map((j, i) => ({ jp: j, en: (en[k] || [])[i] || "", pl: (pl[k] || [])[i] || "", para: true })) }));
+      const btn = $("aSave"); btn.disabled = true; btn.textContent = t.saving; st.textContent = "";
+      try {
+        for (let k = 0; k < docs.length; k++) { if (k === 0 && editId) await col.doc(editId).set(docs[0]); else await col.add(docs[k]); }
+        reset(); st.textContent = t.saved;
+      } catch (err) { st.textContent = t.err; }
+      btn.disabled = false; btn.textContent = editId ? t.upd : t.save;
+    };
+    unsub = col.orderBy("order", "desc").limit(300).onSnapshot(snap => {
+      rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, z) => (a.bookId === z.bookId ? (a.pos || 0) - (z.pos || 0) || a.order - z.order : String(a.bookId).localeCompare(z.bookId)));
+      const list = $("aList"); if (!list) return;
+      list.innerHTML = rows.length ? rows.map(r => { const b = BOOKS.find(x => x.id === r.bookId);
+        return `<li><span class="badge">${esc(r.pos != null ? r.pos : "·")}</span><div><strong>${esc(b ? b.title : r.bookId)} · ${t.pg} ${esc(r.pos != null ? r.pos : "?")}</strong>
+          <small>${r.sentences.length} ${t.lines}${r.head ? " · " + esc(r.head) : ""}</small></div><span><button class="del" data-edit="${esc(r.id)}">${t.edit}</button> <button class="del" data-del="${esc(r.id)}">${t.del}</button></span></li>`; }).join("")
+        : `<li class="none">${t.none2}</li>`;
+      list.querySelectorAll("[data-del]").forEach(b => b.onclick = () => col.doc(b.dataset.del).delete().catch(() => {}));
+      list.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => {
+        const r = rows.find(x => x.id === b.dataset.edit); if (!r) return;
+        editId = r.id; $("aBook").value = r.bookId; fillChap(); if (r.ci != null) $("aChap").value = r.ci;
+        $("aNum").value = r.pos != null ? r.pos : ""; $("aHead").value = r.head || "";
+        $("aJp").value = r.sentences.map(x => x.jp).join("\n"); $("aEn").value = r.sentences.map(x => x.en).join("\n"); $("aPl").value = r.sentences.map(x => x.pl).join("\n");
+        $("aSave").textContent = t.upd; $("aCancel").hidden = false; count(); hint(); scrollTo(0, 0);
+      });
+    }, () => {});
+  }
+
+  // owner-only nav link, and a live feed of admin-added text into the readers
+  (async () => {
+    const [db, user] = await claudeReady;
+    if (!db) return;
+    db.collection("pages").orderBy("order", "asc").limit(500).onSnapshot(snap => {
+      const next = {};
+      snap.docs.forEach(d => { const r = d.data(); if (!r || !r.bookId || !Array.isArray(r.sentences)) return;
+        (next[r.bookId] = next[r.bookId] || []).push({ pos: r.pos == null ? null : r.pos, ci: r.ci == null ? null : r.ci, page: { ...(r.head ? { head: r.head } : {}), ...(r.side ? { side: r.side } : {}), sentences: r.sentences } }); });
+      const changed = JSON.stringify(next) !== JSON.stringify(extraPages); extraPages = next;
+      if (changed && cur.startsWith("book/") && !document.body.classList.contains("modal-open")) route();
+    }, () => {});
+    if (user && await user.isOwner()) { const a = document.getElementById("navAdmin"); if (a) a.hidden = false; }
+  })();
 
   // ---- Learn Japanese ----
   const KANA = {
@@ -373,7 +528,7 @@
     document.querySelectorAll(".lang button").forEach(b => b.classList.toggle("on", b.dataset.lang === lang));
     document.documentElement.lang = lang;
     view.style.animation = "none"; void view.offsetWidth; view.style.animation = "";
-    if (h === "learn") learn(); else if (h === "requests") requests(); else if (h === "about") about(); else if (h.startsWith("book/")) book(h.slice(5)); else grid(page);
+    if (h === "learn") learn(); else if (h === "requests") requests(); else if (h === "admin") admin(); else if (h === "about") about(); else if (h.startsWith("book/")) book(h.slice(5)); else grid(page);
     scrollTo(0, 0);
   }
   document.querySelectorAll(".lang button").forEach(b => b.onclick = () => { lang = b.dataset.lang; store.set("lang", lang); route(); });
