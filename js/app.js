@@ -85,7 +85,6 @@
       <h1>${esc(b.title)}</h1>${b.jp ? `<p class="jp">${esc(b.jp)}</p>` : ""}
       <p class="meta">${[b.author, b.year].filter(Boolean).map(esc).join("  ·  ")}</p>
       <div class="bactions"><button type="button" class="resume" id="resumeBtn" hidden></button></div></div></header>
-      ${spreads.length > 1 ? `<button type="button" class="pgside pgnext" aria-label="${t.nextPage}"><span>‹</span></button><button type="button" class="pgside pgprev" aria-label="${t.prevPage}"><span>›</span></button>` : ""}
       <div id="rdr"></div>${plainHTML}${!spreads.length && !plain.length ? `<p class="empty">${T[lang].none}</p>` : ""}
       <div class="bfoot"><div class="deckrow">
         ${b.flashcards ? `<a class="deck" href="${esc(b.flashcards)}" download><b>${t.deck}</b><span>${t.deckHint}</span></a>`
@@ -118,17 +117,18 @@
         <span class="pgnums">${spreads.map((_, k) => `<button type="button" class="pgn${k === page ? " on" : ""}" data-pg="${k}" aria-label="${t.page} ${k + 1}"${k === page ? ' aria-current="page"' : ""}>${k + 1}</button>`).join("")}</span></nav>` : "";
       rdr.innerHTML = `<h3>${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span>${spreads.length > 1 ? ` <small class="chpage">${t.page} ${page + 1} / ${spreads.length}</small>` : ""}</h3>
         <div class="tools"><p class="hint">${t.hint}</p><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></div>
+        <div class="stage">${spreads.length > 1 ? `<button type="button" class="pgside pgnext" aria-label="${t.nextPage}"${page === spreads.length - 1 ? " disabled" : ""}><span>‹</span></button><button type="button" class="pgside pgprev" aria-label="${t.prevPage}"${page === 0 ? " disabled" : ""}><span>›</span></button>` : ""}
         <div class="spread${dir ? " turn-" + dir : ""}">
           <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(sp.list, "jp")}</div>
-          <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(sp.list, "tr")}</div></div>${pager}`;
-      const pv = view.querySelector(".pgprev"), nx = view.querySelector(".pgnext");
-      if (pv) pv.disabled = page === 0;
-      if (nx) nx.disabled = page === spreads.length - 1;
+          <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(sp.list, "tr")}</div></div></div>${pager}`;
       applyMarks();
     }
     const goPage = (n, scroll) => {
       const to = Math.max(0, Math.min(spreads.length - 1, n)); if (to === page && rdr.firstChild) return;
+      const was = document.activeElement && document.activeElement.classList;
+      const side = was && (was.contains("pgprev") ? ".pgprev" : was.contains("pgnext") ? ".pgnext" : null);
       renderPage(to, to > page ? "next" : "prev");
+      if (side) { const nb = rdr.querySelector(side); if (nb && !nb.disabled) nb.focus({ preventScroll: true }); }
       if (scroll) window.scrollTo({ top: Math.max(0, rdr.getBoundingClientRect().top + scrollY - 20), behavior: "smooth" });
     };
     pageApi = { go: d => goPage(page + d, true) };
