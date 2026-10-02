@@ -222,3 +222,5 @@ a.deck:hover span{color:#ddd}
 #rdr>h3{min-height:62px;display:grid;align-items:end}
 #rdr>h3>.rt{grid-area:1/1;visibility:hidden}
 #rdr>h3>.rt.cur{visibility:visible}
+/* taller book: every page at least this tall (side by side layout only) */
+@media(min-width:821px){.stack>.spread{min-height:780px}}
