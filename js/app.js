@@ -17,16 +17,70 @@
       <a class="card" href="#/book/${esc(b.id)}"><div class="img">${cover(b)}</div>
       <h2>${esc(b.title)}</h2>${b.jp ? `<p>${esc(b.jp)}</p>` : ""}</a>`).join("")}</div>`;
   }
+  const D = {
+    en: { words: "Words", grammar: "Grammar", note: "Note", close: "Close", hint: "Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
+    pl: { words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
+  };
+  const tr = (s) => s[lang] || s.en || "";
+  function sentencesHTML(c, ci, side) {
+    let out = "<p>";
+    c.sentences.forEach((s, i) => {
+      if (i && s.para) out += "</p><p>";
+      const txt = side === "jp" ? s.jp : tr(s);
+      out += `<span class="sent" tabindex="0" role="button" data-s="${ci}-${i}">${esc(txt)}</span>${side === "jp" ? "" : " "}`;
+    });
+    return out + "</p>";
+  }
+  function detailHTML(s) {
+    const t = D[lang], m = o => esc(o && (o[lang] || o.en) || "");
+    return `<button class="dclose" aria-label="${t.close}">×</button>
+      <div class="dtop"><p class="djp" lang="ja">${esc(s.jp)}</p><p class="dtr">${esc(tr(s))}</p></div>
+      <div class="dcols">
+      ${s.words && s.words.length ? `<section><h4>${t.words}</h4><table>${s.words.map(w => `<tr><td class="dw" lang="ja">${esc(w.word)}</td><td class="dr">${esc(w.reading || "")}</td><td>${m(w.meaning)}</td></tr>`).join("")}</table></section>` : ""}
+      ${s.grammar && s.grammar.length ? `<section><h4>${t.grammar}</h4><ul>${s.grammar.map(g => `<li><b lang="ja">${esc(g.pattern)}</b><span>${m(g.explanation)}</span></li>`).join("")}</ul></section>` : ""}
+      ${s.note ? `<section><h4>${t.note}</h4><p>${m(s.note)}</p></section>` : ""}
+      </div>`;
+  }
   function book(id) {
     const b = BOOKS.find(x => x.id === id); if (!b) return grid("books");
-    const done = b.chapters.filter(c => c.text[lang]);
+    const t = D[lang];
+    const chapters = b.chapters.filter(c => c.sentences || (c.text && c.text[lang]));
+    const body = chapters.map((c, ci) => {
+      const title = `<h3>${esc(tr(c.title || {}))}</h3>`;
+      if (c.sentences) return title + `<p class="hint">${t.hint}</p><div class="spread">
+        <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(c, ci, "jp")}</div>
+        <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(c, ci, "tr")}</div></div>`;
+      return title + c.text[lang].split(/\n\s*\n/).map(p => `<p class="t">${esc(p)}</p>`).join("");
+    }).join("");
     view.innerHTML = `<a class="back" href="#/${cat(b)}">${T[lang].back}</a>
-      <article class="book"><div class="img">${cover(b)}</div><div>
+      <article class="book"><header class="bhead"><div class="img">${cover(b)}</div><div>
       <h1>${esc(b.title)}</h1>${b.jp ? `<p class="jp">${esc(b.jp)}</p>` : ""}
-      <p class="meta">${[b.author, b.year, lang.toUpperCase()].filter(Boolean).map(esc).join("  ·  ")}</p>
-      ${done.length ? done.map(c => `<h3>${esc(c.title[lang] || c.title.en || "")}</h3>` +
-        c.text[lang].split(/\n\s*\n/).map(p => `<p class="t">${esc(p)}</p>`).join("")).join("") : `<p class="empty">${T[lang].none}</p>`}
-      </div></article>`;
+      <p class="meta">${[b.author, b.year].filter(Boolean).map(esc).join("  ·  ")}</p></div></header>
+      ${body || `<p class="empty">${T[lang].none}</p>`}
+      <aside class="detail" id="detail" hidden></aside></article>`;
+
+    // sentence interaction: hover/focus lights both pages, click opens the breakdown
+    const detail = $("detail");
+    let selected = null;
+    const light = (key, on) => view.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.toggle("hl", on));
+    const pick = key => {
+      view.querySelectorAll(".sent.sel").forEach(e => e.classList.remove("sel"));
+      if (!key || key === selected) { selected = null; detail.hidden = true; view.querySelector(".book").classList.remove("open"); return; }
+      const [ci, i] = key.split("-").map(Number);
+      selected = key;
+      view.querySelectorAll(`.sent[data-s="${key}"]`).forEach(e => e.classList.add("sel"));
+      detail.innerHTML = detailHTML(chapters[ci].sentences[i]); detail.hidden = false;
+      view.querySelector(".book").classList.add("open");
+      // keep the chosen sentence visible above the breakdown card
+      const first = view.querySelector(`.sent[data-s="${key}"]`);
+      if (first) { const over = first.getBoundingClientRect().bottom - (innerHeight - detail.offsetHeight) + 24; if (over > 0) scrollBy({ top: over, behavior: "smooth" }); }
+    };
+    const keyOf = e => { const s = e.target.closest && e.target.closest(".sent"); return s ? s.dataset.s : null; };
+    view.onmouseover = e => { const k = keyOf(e); if (k) light(k, true); };
+    view.onmouseout = e => { const k = keyOf(e); if (k) light(k, false); };
+    view.onfocusin = view.onmouseover; view.onfocusout = view.onmouseout;
+    view.onclick = e => { const k = keyOf(e); if (k) pick(k); else if (e.target.closest(".dclose")) pick(null); };
+    view.onkeydown = e => { if (e.key === "Escape") pick(null); if ((e.key === "Enter" || e.key === " ") && keyOf(e)) { e.preventDefault(); pick(keyOf(e)); } };
   }
   function about() {
     const a = (typeof ABOUT !== "undefined" && ABOUT[lang]) || "";
@@ -116,6 +170,7 @@
 
   function route() {
     if (unsub) { unsub(); unsub = null; }
+    view.onmouseover = view.onmouseout = view.onfocusin = view.onfocusout = view.onclick = view.onkeydown = null;
     const h = cur;
     const page = h.startsWith("book/") ? cat(BOOKS.find(x => x.id === h.slice(5)) || {}) : (NAV.en[h] ? h : "books");
     document.querySelectorAll("[data-nav]").forEach(a => { a.classList.toggle("on", a.dataset.nav === page); a.textContent = NAV[lang][a.dataset.nav]; });
