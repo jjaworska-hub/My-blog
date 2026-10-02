@@ -4,7 +4,8 @@
   - Add translated chapters to a book's `chapters`. Two kinds:
       * `text: {en, pl}` = plain text; a blank line starts a new paragraph.
       * `sentences: [...]` = the two-page reader (Japanese | translation). Each sentence has
-        `jp`, `en`, `pl` and optional `words`, `grammar`, `note`; `para: true` starts a new paragraph.
+        `jp`, `en`, `pl` and optional `words`, `grammar`, `note`;
+        furigana: write the reading in braces right after the kanji, e.g. 漢字{かんじ}; `para: true` starts a new paragraph.
         See the sample entry "Tsurezuregusa" in the Other tab.
   - `main`/`mark`/`author`/`publisher` = text printed on the spine; `paper`/`band` = spine paper and bottom band colours; `w` = spine width in px. `cover` = image path (put images in /img).
   - `category`: which tab it appears in: "books" (default), "manga" or "other".
@@ -26,13 +27,13 @@ const BOOKS = [
   { id: "tsurezuregusa-sample", category: "other", title: "Tsurezuregusa (reader sample)", jp: "徒然草", author: "兼好 (Kenkō)", tag: "Sample", color: "#2f3d3a", cover: "", chapters: [
 {
         "title": {
-          "jp": "『徒然草』と作者について",
+          "jp": "『徒然草{つれづれぐさ}』と作者{さくしゃ}について",
           "en": "About Tsurezuregusa and Its Author",
           "pl": "O „Tsurezuregusa” i jego autorze"
         },
         "sentences": [
           {
-            "jp": "『徒然草』は、鎌倉時代（一一八五〜一三三三年）の終わり頃、兼好が書きました。",
+            "jp": "『徒然草{つれづれぐさ}』は、鎌倉時代{かまくらじだい}（一一八五{せんひゃくはちじゅうご}〜一三三三年{せんさんびゃくさんじゅうさんねん}）の終{お}わり頃{ごろ}、兼好{けんこう}が書{か}きました。",
             "en": "Tsurezuregusa was written by Kenkō toward the end of the Kamakura period (1185–1333).",
             "pl": "„Tsurezuregusa” została napisana przez Kenkō pod koniec okresu Kamakura (1185–1333).",
             "words": [
@@ -114,7 +115,7 @@ const BOOKS = [
           },
           {
             "para": true,
-            "jp": "「つれづれなるままに（暇ですることもないので）」という文で始まって、兼好が思ったこと、考えたこと、人から聞いたことや見たことなどを書いたものです。",
+            "jp": "「つれづれなるままに（暇{ひま}ですることもないので）」という文{ぶん}で始{はじ}まって、兼好{けんこう}が思{おも}ったこと、考{かんが}えたこと、人{ひと}から聞{き}いたことや見{み}たことなどを書{か}いたものです。",
             "en": "It begins with the line “Tsurezure naru mama ni” (“having nothing else to do”), and it is a record of what Kenkō thought and considered, and things he heard from people or saw himself.",
             "pl": "Zaczyna się od zdania „Tsurezure naru mama ni” („nie mając nic innego do roboty”) i jest zapisem tego, co Kenkō pomyślał i rozważał, oraz tego, co usłyszał od ludzi lub zobaczył.",
             "words": [
@@ -230,7 +231,7 @@ const BOOKS = [
           },
           {
             "para": true,
-            "jp": "このような読みものを「随筆」と言います。",
+            "jp": "このような読{よ}みものを「随筆{ずいひつ}」と言{い}います。",
             "en": "This kind of writing is called “zuihitsu” (essay).",
             "pl": "Taki rodzaj tekstu nazywa się „zuihitsu” (esej).",
             "words": [
@@ -293,7 +294,7 @@ const BOOKS = [
           },
           {
             "para": true,
-            "jp": "『徒然草』には、仏教のことや、不思議な話、人の生き方など、二百四十三の話があります。",
+            "jp": "『徒然草{つれづれぐさ}』には、仏教{ぶっきょう}のことや、不思議{ふしぎ}な話{はなし}、人{ひと}の生{い}き方{かた}など、二百四十三{にひゃくよんじゅうさん}の話{はなし}があります。",
             "en": "Tsurezuregusa contains 243 pieces, on Buddhism, mysterious tales, how people live, and more.",
             "pl": "„Tsurezuregusa” zawiera 243 opowieści: o buddyzmie, historie tajemnicze, o tym, jak żyją ludzie, i inne.",
             "words": [
@@ -378,7 +379,7 @@ const BOOKS = [
             ]
           },
           {
-            "jp": "七百年前のものですが、人々の暮らしや気持ちが、今の私たちにもよくわかります。",
+            "jp": "七百年前{ななひゃくねんまえ}のものですが、人々{ひとびと}の暮{く}らしや気持{きも}ちが、今{いま}の私{わたし}たちにもよくわかります。",
             "en": "It is seven hundred years old, but even we today can understand people’s ways of life and feelings very well.",
             "pl": "Pochodzi sprzed siedmiuset lat, ale my, współcześni, też świetnie rozumiemy sposób życia i uczucia ludzi.",
             "words": [
@@ -487,7 +488,7 @@ const BOOKS = [
           },
           {
             "para": true,
-            "jp": "兼好は、若い時は天皇の下で働いていましたが、三十歳ぐらいの頃お坊さんになり、京都の仁和寺の近くに住んでいたと言われています。",
+            "jp": "兼好{けんこう}は、若{わか}い時{とき}は天皇{てんのう}の下{した}で働{はたら}いていましたが、三十歳{さんじゅっさい}ぐらいの頃{ころ}お坊{ぼう}さんになり、京都{きょうと}の仁和寺{にんなじ}の近{ちか}くに住{す}んでいたと言{い}われています。",
             "en": "Kenkō worked under the Emperor when he was young, but around the age of thirty he became a monk, and he is said to have lived near Ninna-ji temple in Kyoto.",
             "pl": "Kenkō w młodości pracował u cesarza, ale około trzydziestego roku życia został mnichem i podobno mieszkał w pobliżu świątyni Ninna-ji w Kioto.",
             "words": [
@@ -604,7 +605,7 @@ const BOOKS = [
           },
           {
             "para": true,
-            "jp": "この本では、京都のお坊さんが出てくる面白い話を三話、紹介します。",
+            "jp": "この本{ほん}では、京都{きょうと}のお坊{ぼう}さんが出{で}てくる面白{おもしろ}い話{はなし}を三話{さんわ}、紹介{しょうかい}します。",
             "en": "In this book, I will introduce three interesting stories in which monks from Kyoto appear.",
             "pl": "W tej książce przedstawię trzy ciekawe opowieści, w których pojawiają się mnisi z Kioto.",
             "words": [

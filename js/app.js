@@ -18,23 +18,26 @@
       <h2>${esc(b.title)}</h2>${b.jp ? `<p>${esc(b.jp)}</p>` : ""}</a>`).join("")}</div>`;
   }
   const D = {
-    en: { words: "Words", grammar: "Grammar", note: "Note", close: "Close", hint: "Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
-    pl: { words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
+    en: { words: "Words", grammar: "Grammar", note: "Note", close: "Close", furi: "Furigana", hint: "Hover a sentence to see it on both pages. Click it for the word and grammar breakdown.", jpLabel: "日本語", trLabel: "English", reading: "Reading" },
+    pl: { furi: "Furigana", words: "Słowa", grammar: "Gramatyka", note: "Uwaga", close: "Zamknij", hint: "Najedź na zdanie, aby zobaczyć je na obu stronach. Kliknij, aby zobaczyć słowa i gramatykę.", jpLabel: "日本語", trLabel: "Polski", reading: "Czytanie" }
   };
+  // 漢字{かんじ} -> <ruby>漢字<rt>かんじ</rt></ruby> (input is escaped first)
+  const ruby = str => esc(str).replace(/([\u4e00-\u9fff\u3005\u3006\u30f6]+)\{([^}]+)\}/g, "<ruby>$1<rt>$2</rt></ruby>");
+  let furi = store.get("furi") !== "off";
   const tr = (s) => s[lang] || s.en || "";
   function sentencesHTML(c, ci, side) {
     let out = "<p>";
     c.sentences.forEach((s, i) => {
       if (i && s.para) out += "</p><p>";
-      const txt = side === "jp" ? s.jp : tr(s);
-      out += `<span class="sent" tabindex="0" role="button" data-s="${ci}-${i}">${esc(txt)}</span>${side === "jp" ? "" : " "}`;
+      const txt = side === "jp" ? ruby(s.jp) : esc(tr(s));
+      out += `<span class="sent" tabindex="0" role="button" data-s="${ci}-${i}">${txt}</span>${side === "jp" ? "" : " "}`;
     });
     return out + "</p>";
   }
   function detailHTML(s) {
     const t = D[lang], m = o => esc(o && (o[lang] || o.en) || "");
     return `<button class="dclose" aria-label="${t.close}">×</button>
-      <div class="dtop"><p class="djp" lang="ja">${esc(s.jp)}</p><p class="dtr">${esc(tr(s))}</p></div>
+      <div class="dtop"><p class="djp" lang="ja">${ruby(s.jp)}</p><p class="dtr">${esc(tr(s))}</p></div>
       <div class="dcols">
       ${s.words && s.words.length ? `<section><h4>${t.words}</h4><table>${s.words.map(w => `<tr><td class="dw" lang="ja">${esc(w.word)}</td><td class="dr">${esc(w.reading || "")}</td><td>${m(w.meaning)}</td></tr>`).join("")}</table></section>` : ""}
       ${s.grammar && s.grammar.length ? `<section><h4>${t.grammar}</h4><ul>${s.grammar.map(g => `<li><b lang="ja">${esc(g.pattern)}</b><span>${m(g.explanation)}</span></li>`).join("")}</ul></section>` : ""}
@@ -47,14 +50,14 @@
     const chapters = b.chapters.filter(c => c.sentences || (c.text && c.text[lang]));
     const body = chapters.map((c, ci) => {
       const ct = c.title || {};
-      const title = `<h3>${ct.jp ? `<span class="cjp" lang="ja">${esc(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span></h3>`;
-      if (c.sentences) return title + `<p class="hint">${t.hint}</p><div class="spread">
+      const title = `<h3>${ct.jp ? `<span class="cjp" lang="ja">${ruby(ct.jp)}</span> ` : ""}<span>${esc(tr(ct))}</span></h3>`;
+      if (c.sentences) return title + `<div class="tools"><p class="hint">${t.hint}</p><button type="button" class="furitoggle" aria-pressed="${furi}">${t.furi}: ${furi ? "ON" : "OFF"}</button></div><div class="spread">
         <div class="page jp" lang="ja"><span class="plabel">${t.jpLabel}</span>${sentencesHTML(c, ci, "jp")}</div>
         <div class="page tr"><span class="plabel">${t.trLabel}</span>${sentencesHTML(c, ci, "tr")}</div></div>`;
       return title + c.text[lang].split(/\n\s*\n/).map(p => `<p class="t">${esc(p)}</p>`).join("");
     }).join("");
     view.innerHTML = `<a class="back" href="#/${cat(b)}">${T[lang].back}</a>
-      <article class="book"><header class="bhead"><div class="img">${cover(b)}</div><div>
+      <article class="book${furi ? "" : " nofuri"}"><header class="bhead"><div class="img">${cover(b)}</div><div>
       <h1>${esc(b.title)}</h1>${b.jp ? `<p class="jp">${esc(b.jp)}</p>` : ""}
       <p class="meta">${[b.author, b.year].filter(Boolean).map(esc).join("  ·  ")}</p></div></header>
       ${body || `<p class="empty">${T[lang].none}</p>`}
@@ -80,7 +83,16 @@
     view.onmouseover = e => { const k = keyOf(e); if (k) light(k, true); };
     view.onmouseout = e => { const k = keyOf(e); if (k) light(k, false); };
     view.onfocusin = view.onmouseover; view.onfocusout = view.onmouseout;
-    view.onclick = e => { const k = keyOf(e); if (k) pick(k); else if (e.target.closest(".dclose")) pick(null); };
+    view.onclick = e => {
+      const k = keyOf(e);
+      if (k) pick(k);
+      else if (e.target.closest(".dclose")) pick(null);
+      else if (e.target.closest(".furitoggle")) {
+        furi = !furi; store.set("furi", furi ? "on" : "off");
+        view.querySelector(".book").classList.toggle("nofuri", !furi);
+        view.querySelectorAll(".furitoggle").forEach(x => { x.setAttribute("aria-pressed", furi); x.textContent = `${t.furi}: ${furi ? "ON" : "OFF"}`; });
+      }
+    };
     view.onkeydown = e => { if (e.key === "Escape") pick(null); if ((e.key === "Enter" || e.key === " ") && keyOf(e)) { e.preventDefault(); pick(keyOf(e)); } };
   }
   function about() {

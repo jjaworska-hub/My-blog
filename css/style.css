@@ -32,13 +32,19 @@ main{flex:1;max-width:1240px;width:100%;margin-inline:auto;animation:in .5s ease
 .book p.t{font-size:17px;line-height:1.8;margin-bottom:1em;max-width:62ch;color:#2a2a2a}
 .cjp{font-family:var(--mincho);margin-right:10px}
 .nocover{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--mincho);font-size:34px;letter-spacing:.12em;writing-mode:vertical-rl}
-.hint{font-size:13px;color:var(--dim);margin-bottom:14px}
+.tools{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.hint{font-size:13px;color:var(--dim);margin:0;min-width:0;flex:1 1 320px}
+.furitoggle{font:inherit;font-size:12px;letter-spacing:.04em;background:none;border:1px solid var(--line);color:var(--fg);padding:5px 12px;cursor:pointer;transition:background .2s,color .2s}
+.furitoggle[aria-pressed=true]{background:var(--fg);color:#fff;border-color:var(--fg)}
+ruby{ruby-align:center}
+rt{font-family:var(--font);font-size:.48em;letter-spacing:0;color:#6b6b6b;font-weight:400}
+.nofuri rt{display:none}
 .spread{display:grid;grid-template-columns:1fr 1fr;background:#fbfaf6;border:1px solid var(--line);box-shadow:0 14px 34px rgba(0,0,0,.07);position:relative}
 .spread::after{content:"";position:absolute;inset:0 calc(50% - 22px);background:linear-gradient(90deg,transparent,rgba(0,0,0,.06) 50%,transparent);pointer-events:none}
 .page{padding:36px 42px 40px;min-width:0}
 .plabel{display:block;font-size:10px;letter-spacing:.14em;color:var(--dim);margin-bottom:22px;text-transform:uppercase}
 .page p{margin-bottom:1.2em}
-.page.jp{color:#1e1e1e;font-family:var(--mincho);font-size:20px;line-height:2.1;letter-spacing:.02em}
+.page.jp{color:#1e1e1e;font-family:var(--mincho);font-size:20px;line-height:2.5;letter-spacing:.02em}
 .page.tr{font-size:17px;line-height:1.95;color:#2a2a2a}
 .sent{cursor:pointer;border-radius:2px;transition:background .15s,box-shadow .15s;padding:2px 0;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .sent:focus{outline:0}
