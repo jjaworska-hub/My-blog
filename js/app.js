@@ -400,7 +400,7 @@
           mergeUp: "Merge with the previous sentence", addBelow: "Add a sentence below", rm: "Delete", editTxt: "Edit Japanese text", doneTxt: "Done",
           kPh: "reading", kSave: "OK", kDel: "Remove", kCancel: "Cancel",
           save: "Add to page", saving: "Saving…", saved: "Added.", upd: "Update", cancel: "Cancel editing", empty: "Paste some Japanese text first.", err: "Saving failed. Try again.", badnum: "Enter a page number.",
-          list: "Text added here", none2: "Nothing added yet.", edit: "Edit", del: "Delete", denied: "This panel is available only to the site owner, in the Claude preview.",
+          list: "Text added here", exportBtn: "Export for the site (extra.json)", exportHint: "Saves everything added here as extra.json. Put the file in the data folder of the site (or hand it to Claude) so that Netlify shows these pages too.", exportNone: "There is nothing to export yet.", exportOff: "Downloads are not available here.", exportDone: "Exported {n} pages.", none2: "Nothing added yet.", edit: "Edit", del: "Delete", denied: "This panel is available only to the site owner, in the Claude preview.",
           lines: "sentences", pg: "Page", has: "This book has {n} pages. Page {p} exists: the text will be added at its end.",
           fresh: "A new page {p} will be added at the end.", gap: "A new page will be added at the end, as page {p}, because pages up to {n} exist so far." },
     pl: { h: "Panel administratora", lead: "Wklej tekst japoński i tłumaczenia jako zwykły tekst, bez dbania o linie. W polu japońskim nowa linia zaczyna nowy akapit, a linia z --- nową stronę. Panel sam podzieli tekst na zdania i dopasuje tłumaczenia, a potem możesz poprawić każde zdanie osobno.",
@@ -413,7 +413,7 @@
           mergeUp: "Scal z poprzednim zdaniem", addBelow: "Dodaj zdanie poniżej", rm: "Usuń", editTxt: "Edytuj tekst japoński", doneTxt: "Gotowe",
           kPh: "czytanie", kSave: "OK", kDel: "Usuń", kCancel: "Anuluj",
           save: "Dodaj na stronę", saving: "Zapisywanie…", saved: "Dodano.", upd: "Zaktualizuj", cancel: "Anuluj edycję", empty: "Najpierw wklej tekst japoński.", err: "Nie udało się zapisać. Spróbuj ponownie.", badnum: "Wpisz numer strony.",
-          list: "Tekst dodany tutaj", none2: "Nic jeszcze nie dodano.", edit: "Edytuj", del: "Usuń", denied: "Ten panel jest dostępny tylko dla właściciela strony, w podglądzie w Claude.",
+          list: "Tekst dodany tutaj", exportBtn: "Eksportuj dla strony (extra.json)", exportHint: "Zapisuje wszystko, co tu dodano, jako extra.json. Wrzuć plik do folderu data na stronie (albo przekaż go Claude), żeby Netlify też pokazywał te strony.", exportNone: "Nie ma jeszcze czego eksportować.", exportOff: "Pobieranie plików nie jest tu dostępne.", exportDone: "Wyeksportowano stron: {n}.", none2: "Nic jeszcze nie dodano.", edit: "Edytuj", del: "Usuń", denied: "Ten panel jest dostępny tylko dla właściciela strony, w podglądzie w Claude.",
           lines: "zdań", pg: "Strona", has: "Ta książka ma {n} stron. Strona {p} istnieje: tekst zostanie dopisany na jej końcu.",
           fresh: "Zostanie dodana nowa strona {p} na końcu.", gap: "Zostanie dodana nowa strona na końcu, jako strona {p}, bo na razie istnieją strony do {n}." }
   };
@@ -460,7 +460,7 @@
         </div>
         <div class="actions"><button type="submit" id="aSave" disabled>${t.save}</button><button type="button" id="aCancel" hidden>${t.cancel}</button><span class="status" id="aStatus" role="status"></span></div>
       </form>
-      <h2>${t.list}</h2><ul class="reqlist" id="aList"></ul></section>`;
+      <h2>${t.list}</h2><div class="actions"><button type="button" id="aExport">${t.exportBtn}</button></div><p class="hint">${t.exportHint}</p><ul class="reqlist" id="aList"></ul></section>`;
     let rows = [], kedit = null, editId = null, docs = [];
     const st = m => { $("aStatus").textContent = m; };
     // ---- where the text goes (page number hint) ----
@@ -574,6 +574,12 @@
         reset(); st(t.saved);
       } catch (err) { st(t.err); btn.disabled = false; btn.textContent = editId ? t.upd : t.save; }
     };
+    $("aExport").onclick = async () => {
+      if (!docs.length) return st(t.exportNone);
+      if (!dl) return st(t.exportOff);
+      const data = JSON.stringify(docs.map(({ id, ...d }) => d).sort((a, z) => (a.order || 0) - (z.order || 0)), null, 1);
+      try { await dl.save({ filename: "extra.json", data }); st(t.exportDone.replace("{n}", docs.length)); } catch (err) { if (!err || err.code !== "declined") st(t.exportOff); }
+    };
     unsub = col.orderBy("order", "desc").limit(300).onSnapshot(snap => {
       docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, z) => (a.bookId === z.bookId ? (a.pos || 0) - (z.pos || 0) || a.order - z.order : String(a.bookId).localeCompare(z.bookId)));
       const list = $("aList"); if (!list) return;
@@ -592,17 +598,23 @@
     }, () => {});
   }
 
-  // owner-only nav link, and a live feed of admin-added text into the readers
+  // pages added from the admin panel reach the readers from two places: data/extra.json (the published site) and the db (the Claude preview)
+  const toEntry = r => ({ pos: r.pos == null ? null : r.pos, ci: r.ci == null ? null : r.ci, page: { ...(r.head ? { head: r.head } : {}), ...(r.side ? { side: r.side } : {}), sentences: r.sentences } });
+  let fileDocs = [], dbDocs = [];
+  function rebuildExtra() {
+    const next = {};
+    [...fileDocs, ...dbDocs].forEach(r => { if (!r || !r.bookId || !Array.isArray(r.sentences)) return; (next[r.bookId] = next[r.bookId] || []).push(toEntry(r)); });
+    const changed = JSON.stringify(next) !== JSON.stringify(extraPages); extraPages = next;
+    if (changed && cur.startsWith("book/") && !document.body.classList.contains("modal-open")) route();
+  }
+  fetch("data/extra.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : []).then(j => {
+    if (Array.isArray(j)) { fileDocs = j.slice().sort((a, z) => (a.order || 0) - (z.order || 0)); rebuildExtra(); }
+  }).catch(() => {});
+  // owner-only nav link, and a live feed of admin-added text from the db
   (async () => {
     const [db, user] = await claudeReady;
     if (!db) return;
-    db.collection("pages").orderBy("order", "asc").limit(500).onSnapshot(snap => {
-      const next = {};
-      snap.docs.forEach(d => { const r = d.data(); if (!r || !r.bookId || !Array.isArray(r.sentences)) return;
-        (next[r.bookId] = next[r.bookId] || []).push({ pos: r.pos == null ? null : r.pos, ci: r.ci == null ? null : r.ci, page: { ...(r.head ? { head: r.head } : {}), ...(r.side ? { side: r.side } : {}), sentences: r.sentences } }); });
-      const changed = JSON.stringify(next) !== JSON.stringify(extraPages); extraPages = next;
-      if (changed && cur.startsWith("book/") && !document.body.classList.contains("modal-open")) route();
-    }, () => {});
+    db.collection("pages").orderBy("order", "asc").limit(500).onSnapshot(snap => { dbDocs = snap.docs.map(d => d.data()); rebuildExtra(); }, () => {});
     if (user && await user.isOwner()) { const a = document.getElementById("navAdmin"); if (a) a.hidden = false; }
   })();
 
