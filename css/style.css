@@ -191,3 +191,13 @@ a.deck:hover span{color:#ddd}
 .pgn.hasbm::after{content:"";position:absolute;top:1px;right:3px;width:7px;height:7px;border-radius:50%;background:#e0301e;box-shadow:0 0 0 2px #fff}
 .pager button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 @media(max-width:600px){.pager{justify-content:center}.pager>button{min-width:0;flex:1 1 40%}.pgnums{order:3;flex-basis:100%}.pager>.pgprev span,.pager>.pgnext span{display:inline}}
+
+/* right-to-left book: first page on the right, pages turn to the left */
+.spread{direction:rtl}
+.spread .page{direction:ltr}
+.pager,.pgnums{direction:rtl}
+.pager>button,.pgn{direction:ltr}
+.pager>.pgprev{text-align:right}
+.pager>.pgnext{text-align:left}
+@keyframes turnNext{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+@keyframes turnPrev{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
